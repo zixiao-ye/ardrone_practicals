@@ -18,6 +18,7 @@
     <remap from="ardrone/front/image_raw" to="drone/front_camera/image_raw"/>
     <remap from="ardrone/imu" to="drone/imu"/> 
     <remap from="ardrone/takeoff" to="drone/takeoff"/> 
+    <remap from="ardrone/reset" to="drone/reset"/> 
     <remap from="ardrone/land" to="drone/land"/> 
     <remap from="ardrone/navdata" to="drone/navdata"/> 
     <!-- Camera parameters-->
