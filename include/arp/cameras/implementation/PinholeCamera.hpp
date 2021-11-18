@@ -176,7 +176,7 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint,
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
-  // TODO: implement in practical No. 3
+  // TODO: implement
   throw std::runtime_error("not implemented");
   return ProjectionStatus::Invalid;
 }
