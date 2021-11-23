@@ -83,7 +83,7 @@ class VisualInertialTracker
   void controllerLoop();
   void visualisationLoop();
 
-  Frontend* frontend_ = nullptr; ///< The frontend that performs tag detections.
+  Frontend* frontend_ = nullptr; ///< The frontend.
   ViEkf* estimator_ = nullptr; ///< The estimator.
 
   std::thread processingThread_; ///< Thread consuming asynchronously arriving measurements.
