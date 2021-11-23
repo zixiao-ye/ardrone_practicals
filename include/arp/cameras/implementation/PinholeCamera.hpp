@@ -191,7 +191,7 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 {
   // TODO: implement
   throw std::runtime_error("not implemented");
-  return success;
+  return false;
 }
 
 
