@@ -93,8 +93,8 @@ void VisualInertialTracker::processingLoop()
       bool successGetState = estimator_->getState(cameraMeasurement.timestampMicroseconds, xi);
       Eigen::Vector3d dir(0,1,0);
       if(successGetState) {
-        T_WS = kinematics::Transformation(xi.r_W, xi.q_WS);
-        dir = estimator_->T_SC().inverse().C()*T_WS.inverse().C()*Eigen::Vector3d(0,0,-1);
+        T_WS = kinematics::Transformation(xi.t_WS, xi.q_WS);
+        dir = estimator_->T_SC().inverse().R()*T_WS.inverse().R()*Eigen::Vector3d(0,0,-1);
         T_CW = estimator_->T_SC().inverse() * T_WS.inverse();
       }
       bool needsReInitialisation = true;
@@ -114,7 +114,7 @@ void VisualInertialTracker::processingLoop()
           kinematics::RobotState x;
           Eigen::Matrix<double, 15, 15> P =
               Eigen::Matrix<double, 15, 15>::Identity();
-          x.r_W = T_WS.r();
+          x.t_WS = T_WS.t();
           x.q_WS = T_WS.q();
           x.v_W.setZero();
           x.b_g.setZero();
