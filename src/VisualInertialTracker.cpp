@@ -93,10 +93,16 @@ void VisualInertialTracker::processingLoop()
       bool successGetState = estimator_->getState(cameraMeasurement.timestampMicroseconds, xi);
       Eigen::Vector3d dir(0,1,0);
       if(successGetState) {
-        dir = estimator_->T_SC().inverse().C()*xi.q_WS.inverse().toRotationMatrix()*Eigen::Vector3d(0,0,-1);
+        T_WS = kinematics::Transformation(xi.r_W, xi.q_WS);
+        dir = estimator_->T_SC().inverse().C()*T_WS.inverse().C()*Eigen::Vector3d(0,0,-1);
+        T_CW = estimator_->T_SC().inverse() * T_WS.inverse();
+      }
+      bool needsReInitialisation = true;
+      if(successGetState && estimator_->isInitialised()) {
+        needsReInitialisation = false;
       }
       bool ransacSuccess = frontend_->detectAndMatch(
-          cameraMeasurement.image, dir, detections, T_CW, visualisationImage);
+          cameraMeasurement.image, dir, detections, T_CW, visualisationImage, needsReInitialisation);
       if (detections.size() > 0) {
         // feed to estimator (measurement update)
         if (estimator_->isInitialised() && fusionEnabled_) {
