@@ -166,6 +166,7 @@ add_library(${PROJECT_NAME}
    src/Frontend.cpp
    src/Imu.cpp
    src/ViEkf.cpp
+   src/PidController.cpp
 )
 add_dependencies(${PROJECT_NAME} brisk agast)
 target_link_libraries(${PROJECT_NAME}
