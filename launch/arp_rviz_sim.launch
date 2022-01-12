@@ -29,6 +29,13 @@
     <param name="p1" value="0" />
     <param name="p2" value="0" />
     <rosparam param="T_SC">[0.0, 0.0, 1.0, 0.2, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]</rosparam>
+    <!-- controller parameters-->
+    <param name="euler_angle_max" value="0.21" />
+    <param name="control_vz_max" value="700" />
+    <param name="control_yaw" value="1.75" />
+    <remap from="ardrone/euler_angle_max" to="arp_node/euler_angle_max"/>
+    <remap from="ardrone/control_vz_max" to="arp_node/control_vz_max"/>
+    <remap from="ardrone/control_yaw" to="arp_node/control_yaw"/>
     <!-- Make sure to match the map to the world loaded above! -->
     <param name="map" value="okvis2-slam-final_map_skokloster_new2.csv" />
     <!--param name="map" value="okvis2-slam-final_map_garching_new2.csv" /-->
