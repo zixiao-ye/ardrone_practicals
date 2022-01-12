@@ -38,10 +38,6 @@
       output="screen">
 		<!-- remap from="/cmd_vel" to="/cmd_vel_test"/>-->
     
-    <remap from="ardrone/euler_angle_max" to="ardrone_driver/euler_angle_max"/>
-    <remap from="ardrone/control_vz_max" to="ardrone_driver/control_vz_max"/>
-    <remap from="ardrone/control_yaw" to="ardrone_driver/control_yaw"/>
-    
     <!-- Camera parameters-->
     <param name="fu" value="0" />
     <param name="fv" value="0" />
