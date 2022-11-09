@@ -21,6 +21,8 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   pubTakeoff_ = nh_->advertise<std_msgs::Empty>("/ardrone/takeoff", 1);
   pubLand_ = nh_->advertise<std_msgs::Empty>("/ardrone/land", 1);
 
+  pubMove_ =nh_->advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+
   // flattrim service
   srvFlattrim_ = nh_->serviceClient<std_srvs::Empty>(
       nh_->resolveName("ardrone/flattrim"), 1);
@@ -96,15 +98,57 @@ bool Autopilot::estopReset()
 bool Autopilot::manualMove(double forward, double left, double up,
                            double rotateLeft)
 {
-  return move(forward, left, up, rotateLeft);
+  /* return move(forward, left, up, rotateLeft); */
+
+    DroneStatus status = droneStatus();
+  if (status != DroneStatus::Landed)
+  {
+    geometry_msgs::Twist moveMsg;
+    moveMsg.linear.x=forward;
+    moveMsg.linear.y=left;
+    moveMsg.linear.z=up;
+/*  moveMsg.angular.x=rotateLeft;
+    moveMsg.angular.y=rotateLeft; */
+    moveMsg.angular.z=rotateLeft;
+
+    pubMove_.publish(moveMsg);
+
+    return true;
+  }
+  
+
+
+  return false;
 }
 
 // Move the drone.
-bool Autopilot::move(double, double, double, double)
+bool Autopilot::move(double forward, double left, double up, double rotateLeft)
 {
   // TODO: implement...
+  DroneStatus status = droneStatus();
+  if (status != DroneStatus::Landed)
+  {
+    geometry_msgs::Twist moveMsg;
+    moveMsg.linear.x=forward;
+    moveMsg.linear.y=left;
+    moveMsg.linear.z=up;
+/*  moveMsg.angular.x=rotateLeft;
+    moveMsg.angular.y=rotateLeft; */
+    moveMsg.angular.z=rotateLeft;
+
+    pubMove_.publish(moveMsg);
+
+    return true;
+  }
+  
+
+
   return false;
 }
+
+/* float getbatteryPercent(Autopilot::lastNavdata_){
+  return lastNavdata_.batteryPercent;
+} */
 
 }  // namespace arp
 

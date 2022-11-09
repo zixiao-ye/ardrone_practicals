@@ -83,6 +83,8 @@ class Autopilot {
   /// \note This will only do something when in manual mode and flying.
   bool manualMove(double forward, double left, double up, double rotateLeft);
 
+  float getbatteryPercent(){return lastNavdata_.batteryPercent;}
+
  protected:
   /// \brief Move the drone.
   /// @param[in] forward Forward tilt [-1,...,1] scaling the maximum tilt ROS parameter.
@@ -96,12 +98,17 @@ class Autopilot {
   /// @param[out] navdata The navdata message.
   void navdataCallback(const ardrone_autonomy::NavdataConstPtr& msg);
 
+
   ros::NodeHandle * nh_;  ///< ROS node handle.
   ros::Publisher pubReset_;  ///< The reset publisher -- use to reset the drone (e-stop).
   ros::Publisher pubTakeoff_;  ///< Publish to take-off the drone.
   ros::Publisher pubLand_;  ///< Publish to land the drone.
+
+  ros::Publisher pubMove_;
+
   ros::ServiceClient srvFlattrim_;  ///< To request a flat trim calibration.
   ardrone_autonomy::Navdata lastNavdata_; ///< Store navdata as it comes in asynchronously.
+
   std::mutex navdataMutex_; ///< We need to lock navdata access due to asynchronous arrival.
   ros::Subscriber subNavdata_; ///< The subscriber for navdata.
 };

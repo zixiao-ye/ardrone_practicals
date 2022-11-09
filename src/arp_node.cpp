@@ -155,6 +155,107 @@ int main(int argc, char **argv)
     }
 
     // TODO: process moving commands when in state 3,4, or 7
+    double forward=0;
+    double left=0;
+    double up=0;
+    double rotateLeft=0;
+
+    if (state[SDL_SCANCODE_UP]) {
+      std::cout << "Moving the drone forward...     status=" << droneStatus;
+/*       //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+      if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      forward+=0.5;
+    }
+    if (state[SDL_SCANCODE_DOWN]) {
+      std::cout << "Moving the drone backward...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      forward+=-0.5;
+    }
+    if (state[SDL_SCANCODE_LEFT]) {
+      std::cout << "Moving the drone left...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      left+=0.5;
+    }
+    if (state[SDL_SCANCODE_RIGHT]) {
+      std::cout << "Moving thr drone right...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      left+=-0.5;
+    }
+    
+    if (state[SDL_SCANCODE_W]) {
+      std::cout << "Moving the drone up...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.99,0,0,0);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      up+=0.5;
+    }
+    if (state[SDL_SCANCODE_S]) {
+      std::cout << "Moving the drone down...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      up+=-0.5;
+    }
+    if (state[SDL_SCANCODE_A]) {
+      std::cout << "Yawing the drone left...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      rotateLeft += 0.5;
+    }
+    if (state[SDL_SCANCODE_D]) {
+      std::cout << "Yawing the drone right...     status=" << droneStatus;
+      //bool success = autopilot.manualMove(0.1,0.1,0.1,0.1);
+/*       if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      } */
+      rotateLeft += -0.5;
+    }
+
+    //if (forward != 0 || left!=0 || up !=0 || rotateLeft != 0){
+      
+      bool success = autopilot.manualMove(forward,left,up,rotateLeft);
+      if (forward != 0 || left!=0 || up !=0 || rotateLeft != 0 && success) {
+        std::cout << " [ OK ]" << std::endl;
+      } 
+      if (!success) {
+        std::cout << " [FAIL]" << std::endl;
+      }
+    //}
+
+    
+    std::cout << autopilot.getbatteryPercent() << std::endl;
+    
   }
 
   // make sure to land the drone...
