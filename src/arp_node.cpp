@@ -79,6 +79,9 @@ int main(int argc, char **argv)
   SDL_RenderPresent(renderer);
   SDL_Texture * texture;
 
+  std::string str1="Instructions: arrow keys for going forward/backward and left/right";
+  std::string str2="W/S for going up/down, A/D for yawing left/right";
+
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
   cv::Mat image;
@@ -91,11 +94,50 @@ int main(int argc, char **argv)
       break;
     }
 
+    auto droneStatus = autopilot.droneStatus();
+
     // render image, if there is a new one available
     if(subscriber.getLastImage(image)) {
 
       // TODO: add overlays to the cv::Mat image, e.g. text
-      
+      cv::putText(image, 
+            "Battery State: "+std::to_string(autopilot.getbatteryPercent()),
+            cv::Point(10,20), // Coordinates (Bottom-left corner of the text string in the image)
+            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+            0.7, // Scale. 2.0 = 2x bigger
+            cv::Scalar(0,255,0), // BGR Color
+            1, // Line Thickness (Optional)
+            cv:: LINE_AA); // Anti-alias (Optional, see version note)
+
+      cv::putText(image, 
+            "Current Ardrone Status: "+std::to_string(droneStatus),
+            cv::Point(350,20), // Coordinates (Bottom-left corner of the text string in the image)
+            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+            0.7, // Scale. 2.0 = 2x bigger
+            cv::Scalar(0,255,0), // BGR Color
+            1, // Line Thickness (Optional)
+            cv:: LINE_AA); // Anti-alias (Optional, see version note)
+
+
+
+      cv::putText(image, 
+            str1,
+            cv::Point(0,300), // Coordinates (Bottom-left corner of the text string in the image)
+            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+            0.7, // Scale. 2.0 = 2x bigger
+            cv::Scalar(0,255,0), // BGR Color
+            1, // Line Thickness (Optional)
+            cv:: LINE_AA); // Anti-alias (Optional, see version note)
+
+      cv::putText(image, 
+            str2,
+            cv::Point(130,320), // Coordinates (Bottom-left corner of the text string in the image)
+            cv::FONT_HERSHEY_COMPLEX_SMALL, // Font
+            0.7, // Scale. 2.0 = 2x bigger
+            cv::Scalar(0,255,0), // BGR Color
+            1, // Line Thickness (Optional)
+            cv:: LINE_AA); // Anti-alias (Optional, see version note)
+            
       // https://stackoverflow.com/questions/22702630/converting-cvmat-to-sdl-texture
       // I'm using SDL_TEXTUREACCESS_STREAMING because it's for a video player, you should
       // pick whatever suits you most: https://wiki.libsdl.org/SDL_TextureAccess
@@ -114,7 +156,7 @@ int main(int argc, char **argv)
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 
     // check states!
-    auto droneStatus = autopilot.droneStatus();
+    //auto droneStatus = autopilot.droneStatus();
     // command
     if (state[SDL_SCANCODE_ESCAPE]) {
       std::cout << "ESTOP PRESSED, SHUTTING OFF ALL MOTORS status=" << droneStatus;
@@ -245,16 +287,16 @@ int main(int argc, char **argv)
     //if (forward != 0 || left!=0 || up !=0 || rotateLeft != 0){
       
       bool success = autopilot.manualMove(forward,left,up,rotateLeft);
-      if (forward != 0 || left!=0 || up !=0 || rotateLeft != 0 && success) {
-        std::cout << " [ OK ]" << std::endl;
+      if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && success) {
+        std::cout << " [ OK ] " << std::endl;
       } 
-      if (!success) {
-        std::cout << " [FAIL]" << std::endl;
+      if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && !success) {
+        std::cout << " [FAIL] " << std::endl;
       }
     //}
 
     
-    std::cout << autopilot.getbatteryPercent() << std::endl;
+    //std::cout << autopilot.getbatteryPercent() << std::endl;
     
   }
 

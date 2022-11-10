@@ -98,27 +98,8 @@ bool Autopilot::estopReset()
 bool Autopilot::manualMove(double forward, double left, double up,
                            double rotateLeft)
 {
-  /* return move(forward, left, up, rotateLeft); */
+  return move(forward, left, up, rotateLeft); 
 
-    DroneStatus status = droneStatus();
-  if (status != DroneStatus::Landed)
-  {
-    geometry_msgs::Twist moveMsg;
-    moveMsg.linear.x=forward;
-    moveMsg.linear.y=left;
-    moveMsg.linear.z=up;
-/*  moveMsg.angular.x=rotateLeft;
-    moveMsg.angular.y=rotateLeft; */
-    moveMsg.angular.z=rotateLeft;
-
-    pubMove_.publish(moveMsg);
-
-    return true;
-  }
-  
-
-
-  return false;
 }
 
 // Move the drone.
@@ -126,7 +107,8 @@ bool Autopilot::move(double forward, double left, double up, double rotateLeft)
 {
   // TODO: implement...
   DroneStatus status = droneStatus();
-  if (status != DroneStatus::Landed)
+  if (status != DroneStatus::Landed && status != DroneStatus::Landing
+      && status != DroneStatus::Looping)
   {
     geometry_msgs::Twist moveMsg;
     moveMsg.linear.x=forward;
