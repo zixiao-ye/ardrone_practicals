@@ -104,7 +104,7 @@ class Autopilot {
   ros::Publisher pubTakeoff_;  ///< Publish to take-off the drone.
   ros::Publisher pubLand_;  ///< Publish to land the drone.
 
-  ros::Publisher pubMove_;
+  ros::Publisher pubMove_;///< Publish to move the drone.
 
   ros::ServiceClient srvFlattrim_;  ///< To request a flat trim calibration.
   ardrone_autonomy::Navdata lastNavdata_; ///< Store navdata as it comes in asynchronously.

@@ -114,8 +114,6 @@ bool Autopilot::move(double forward, double left, double up, double rotateLeft)
     moveMsg.linear.x=forward;
     moveMsg.linear.y=left;
     moveMsg.linear.z=up;
-/*  moveMsg.angular.x=rotateLeft;
-    moveMsg.angular.y=rotateLeft; */
     moveMsg.angular.z=rotateLeft;
 
     pubMove_.publish(moveMsg);
