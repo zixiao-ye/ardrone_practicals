@@ -166,7 +166,32 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     const Eigen::Vector3d & point, Eigen::Vector2d * imagePoint) const
 {
   // TODO: implement
-  throw std::runtime_error("not implemented");
+
+  // (1) project to unit plane 
+  Eigen::Vector2d x1;
+  x1(0) = point(0) / point(2);
+  x1(1) = point(1) / point(2);
+
+ 
+  
+  // (2) distort (using the distortion object, as you should implement in RadialTangentialDistortion::distort) 
+  Eigen::Vector2d x2;
+  distortion_.distort(x1,&x2);
+
+  // (3) scale and centre
+  Eigen::Vector2d u;
+
+  Eigen::Matrix2d f;
+  f   << fu_, 0,
+         0, fv_;
+  Eigen::Vector2d c(cu_,cv_) ;
+  
+  u = f*x2 + c; 
+  
+  //throw std::runtime_error("not implemented");
+
+  imagePoint = &u;
+
   return ProjectionStatus::Invalid;
 }
 
@@ -190,6 +215,8 @@ bool PinholeCamera<DISTORTION_T>::backProject(
     const Eigen::Vector2d & imagePoint, Eigen::Vector3d * direction) const
 {
   // TODO: implement
+  bool success = false;
+
   throw std::runtime_error("not implemented");
   return success;
 }

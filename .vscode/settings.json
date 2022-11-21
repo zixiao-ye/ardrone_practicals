@@ -1,3 +1,10 @@
 {
-    "codetogether.virtualCursorJoin": "ownVirtualCursor"
+    "codetogether.virtualCursorJoin": "ownVirtualCursor",
+    "files.associations": {
+        "tuple": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp",
+        "core": "cpp",
+        "stdexcept": "cpp"
+    }
 }
