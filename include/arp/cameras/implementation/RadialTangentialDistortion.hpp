@@ -89,7 +89,7 @@ bool RadialTangentialDistortion::distort(
     Eigen::Matrix2d * pointJacobian) const
 {
   // TODO: implement
-  throw std::runtime_error("not implemented");
+  throw std::runtime_error("not implemented distort");
   return false;
 }
 

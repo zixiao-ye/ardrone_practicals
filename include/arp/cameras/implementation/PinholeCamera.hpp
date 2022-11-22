@@ -167,12 +167,12 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
 {
   // TODO: implement
 
+  //std::cout << "project point: \n" << point << std::endl;
+
   // (1) project to unit plane 
   Eigen::Vector2d x1;
   x1(0) = point(0) / point(2);
   x1(1) = point(1) / point(2);
-
- 
   
   // (2) distort (using the distortion object, as you should implement in RadialTangentialDistortion::distort) 
   Eigen::Vector2d x2;
@@ -190,7 +190,9 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   
   //throw std::runtime_error("not implemented");
 
-  imagePoint = &u;
+  * imagePoint = u;
+
+  //std::cout << "project imagePoint: \n" << u << std::endl;
 
   return ProjectionStatus::Invalid;
 }
@@ -202,7 +204,7 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
   // TODO: implement
-  throw std::runtime_error("not implemented");
+  throw std::runtime_error("not implemented project pointJacobian");
   return ProjectionStatus::Invalid;
 }
 
@@ -215,9 +217,32 @@ bool PinholeCamera<DISTORTION_T>::backProject(
     const Eigen::Vector2d & imagePoint, Eigen::Vector3d * direction) const
 {
   // TODO: implement
-  bool success = false;
 
-  throw std::runtime_error("not implemented");
+  //std::cout << "backProject imagePoint: \n" << imagePoint << std::endl;
+
+  // 1. Change to unit plane coordinates:
+  Eigen::Vector2d x2;
+
+  Eigen::Matrix2d f;
+  f   << 1/fu_, 0,
+         0, 1/fv_;
+  Eigen::Vector2d c (cu_,cv_) ;
+
+  x2 = f*(imagePoint - c);
+
+  // 2. Un-distort (e.g. Radial-Tangential):
+  Eigen::Vector2d x1;
+  distortion_.undistort(x2,&x1);
+  
+  // 3. Compute the ray
+  Eigen::Vector3d x (x1(0), x1(1), 1);
+
+  //throw std::runtime_error("not implemented");
+  bool success = true;
+  * direction = x;
+
+  //std::cout << "backProject direction: \n" << x << std::endl;
+  
   return success;
 }
 

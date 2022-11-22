@@ -15,14 +15,17 @@ TEST(PinholeCamera, projectBackProject)
 
   // create a random visible point in the camera coordinate frame C
   auto point_C = pinholeCamera.createRandomVisiblePoint();
+  std::cout << "TEST point_C: \n" << point_C << std::endl;
 
   // project
   Eigen::Vector2d imagePoint;
   pinholeCamera.project(point_C,&imagePoint);
+  //std::cout << "TEST imagePoint: \n" << imagePoint << std::endl;
 
   // backProject
   Eigen::Vector3d ray_C;
   pinholeCamera.backProject(imagePoint,&ray_C);
+  std::cout << "TEST ray_C: \n" << ray_C << std::endl;
 
   // now they should align:
   EXPECT_TRUE(fabs(ray_C.normalized().transpose()*point_C.normalized()-1.0)<1.0e-10);
