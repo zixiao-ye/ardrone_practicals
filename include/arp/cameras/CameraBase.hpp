@@ -131,7 +131,6 @@ class CameraBase
   /// @param[in]  point              The point in Euclidean coordinates.
   /// @param[out] imagePoint         The image point.
   /// @param[out] pointJacobian      The Jacobian of the projection function w.r.t. the point..
-  /// @param[out] intrinsicsJacobian The Jacobian of the projection function w.r.t. the intinsics.
   /// @return     Get information about the success of the projection. See
   ///             \ref ProjectionStatus for more information.
   virtual ProjectionStatus project(
