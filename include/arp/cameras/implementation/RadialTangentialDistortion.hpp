@@ -79,7 +79,7 @@ bool RadialTangentialDistortion::distort(
 
   temp(1) = (1 + k1_*r2 + k2_*pow(r2,2)) * pointUndistorted(1) + (p1_*(r2 + 2*pow(pointUndistorted(1),2)) + 2*p2_*pointUndistorted(0)*pointUndistorted(1)); 
 
-  pointDistorted = &temp;
+  * pointDistorted = temp;
   //throw std::runtime_error("not implemented");
   return true;
 
@@ -89,8 +89,30 @@ bool RadialTangentialDistortion::distort(
     Eigen::Matrix2d * pointJacobian) const
 {
   // TODO: implement
-  throw std::runtime_error("not implemented distort");
-  return false;
+
+  /*
+  d00 = (x (2 k1 x + 4 k2 x (x^2 + y^2)) + k1 (x^2 + y^2) + k2 (x^2 + y^2)^2 + 2 p1 y + 6 p2 x + 1)
+  d01 = (x (2 k1 y + 4 k2 y (x^2 + y^2)) + 2 p1 x + 2 p2 y)
+  d10 = (y (2 k1 x + 4 k2 x (x^2 + y^2)) + 2 p1 x + 2 p2 y)
+  d11 = (y (2 k1 y + 4 k2 y (x^2 + y^2)) + k1 (x^2 + y^2) + k2 (x^2 + y^2)^2 + 6 p1 y + 2 p2 x + 1)
+  */
+
+  double x = pointUndistorted(0);
+  double y = pointUndistorted(1);
+
+  double r2 = pow(x,2) + pow(y, 2);
+  
+  double d00 = x*(2*k1_*x + 4*k2_*x*r2) + k1_*r2 + k2_*pow(r2,2) + 2*p1_*y + 6*p2_*x +1;
+  double d01 = x*(2*k1_*y + 4*k2_*y*r2) + 2*p1_*x + 2*p2_*y;
+  double d10 = y*(2*k1_*x + 4*k2_*x*r2) + 2*p1_*x + 2*p2_*y;
+  double d11 = y*(2*k1_*y + 4*k2_*y*r2) + k1_*r2 + k2_*pow(r2,2) + 6*p1_*y + 2*p2_*x + 1;
+
+  *pointJacobian   << d00, d01,
+                      d10, d11;
+
+  RadialTangentialDistortion::distort(pointUndistorted, pointDistorted);
+
+  return true;
 }
 
 bool RadialTangentialDistortion::undistort(
@@ -106,6 +128,8 @@ bool RadialTangentialDistortion::undistort(
   for (int i = 0; i < n; i++) {
 
     Eigen::Vector2d x_tmp;
+
+    std::cout << "undistort x_bar: \n" << x_bar << std::endl;
 
     distort(x_bar, &x_tmp, &E);
 

@@ -194,7 +194,7 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
 
   //std::cout << "project imagePoint: \n" << u << std::endl;
 
-  return ProjectionStatus::Invalid;
+  return ProjectionStatus::Successful;
 }
 
 // Projects a Euclidean point to a 2d image point (projection).
@@ -204,8 +204,27 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
     Eigen::Matrix<double, 2, 3> * pointJacobian) const
 {
   // TODO: implement
+
+  double l1 = point(0);
+  double l2 = point(1);
+  double l3 = point(2);
+
+  // (1)
+  Eigen::Matrix2d F;
+  F   << fu_, 0,
+         0, fv_;
+
+  // (2)
+
+  // (3)
+  Eigen::Matrix<double, 2, 3> L;
+  L   << 1/l3, 0, -l1/pow(l3,2);
+         0, 1/l3, -l2/pow(l3,2);
+
+  PinholeCamera<DISTORTION_T>::project(point, imagePoint);
+
   throw std::runtime_error("not implemented project pointJacobian");
-  return ProjectionStatus::Invalid;
+  return ProjectionStatus::Invalid; 
 }
 
 /////////////////////////////////////////
@@ -218,7 +237,7 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 {
   // TODO: implement
 
-  //std::cout << "backProject imagePoint: \n" << imagePoint << std::endl;
+  std::cout << "backProject imagePoint: \n" << imagePoint << std::endl;
 
   // 1. Change to unit plane coordinates:
   Eigen::Vector2d x2;
@@ -232,6 +251,9 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 
   // 2. Un-distort (e.g. Radial-Tangential):
   Eigen::Vector2d x1;
+
+  std::cout << "backProject x2: \n" << x2 << std::endl;
+
   distortion_.undistort(x2,&x1);
   
   // 3. Compute the ray
