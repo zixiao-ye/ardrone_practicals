@@ -129,7 +129,7 @@ bool RadialTangentialDistortion::undistort(
 
     Eigen::Vector2d x_tmp;
 
-    std::cout << "undistort x_bar: \n" << x_bar << std::endl;
+    //std::cout << "undistort x_bar: \n" << x_bar << std::endl;
 
     distort(x_bar, &x_tmp, &E);
 

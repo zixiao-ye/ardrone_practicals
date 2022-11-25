@@ -82,10 +82,29 @@ int main(int argc, char **argv)
   std::string str1="Instructions: arrow keys for going forward/backward and left/right";
   std::string str2="W/S for going up/down, A/D for yawing left/right";
 
+  std::string fu, fv, cu, cv, k1, k2, p1, p2;
+  if (nh.getParam("/fu", fu))
+  {
+    std::cout<<fv<<std::endl;
+  }
+  else{
+    std::cout<<"Fail to get the parameter!"<<std::endl;
+  }
+
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
   cv::Mat image;
+  std::string s;
   while (ros::ok()) {
+
+  /* if (nh.getParam("/fu", fu))
+  {
+    std::cout<<fu<<std::endl;
+  }
+  else{
+    std::cout<<"Fail to get the parameter!"<<std::endl;
+  } */
+
     ros::spinOnce();
     ros::Duration dur(0.04);
     dur.sleep();
@@ -93,6 +112,7 @@ int main(int argc, char **argv)
     if (event.type == SDL_QUIT) {
       break;
     }
+    
 
     auto droneStatus = autopilot.droneStatus();
 

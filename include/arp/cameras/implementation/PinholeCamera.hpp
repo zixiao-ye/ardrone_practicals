@@ -205,26 +205,43 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
 {
   // TODO: implement
 
-  double l1 = point(0);
-  double l2 = point(1);
-  double l3 = point(2);
-
   // (1)
   Eigen::Matrix2d F;
   F   << fu_, 0,
          0, fv_;
 
   // (2)
+  Eigen::Matrix2d D; 
+  Eigen::Vector2d x_tmp;
+
+  Eigen::Vector2d x1;
+  x1(0) = point(0) / point(2);
+  x1(1) = point(1) / point(2);
+
+  distortion_.distort(x1, &x_tmp, &D);
+
+  Eigen::Vector2d u;
+  Eigen::Vector2d c(cu_,cv_) ;
+  
+  u = F*x_tmp + c; 
+  
+  * imagePoint = u;
 
   // (3)
+  double l1 = point(0);
+  double l2 = point(1);
+  double l3 = point(2);
+
   Eigen::Matrix<double, 2, 3> L;
-  L   << 1/l3, 0, -l1/pow(l3,2);
+  L   << 1/l3, 0, -l1/pow(l3,2),
          0, 1/l3, -l2/pow(l3,2);
 
-  PinholeCamera<DISTORTION_T>::project(point, imagePoint);
+  // (4)
+  * pointJacobian = F * D * L;
+  //std::cout << "pointJacobian: \n" << *pointJacobian << std::endl;
 
-  throw std::runtime_error("not implemented project pointJacobian");
-  return ProjectionStatus::Invalid; 
+  //throw std::runtime_error("not implemented project pointJacobian");
+  return ProjectionStatus::Successful; 
 }
 
 /////////////////////////////////////////
@@ -237,7 +254,7 @@ bool PinholeCamera<DISTORTION_T>::backProject(
 {
   // TODO: implement
 
-  std::cout << "backProject imagePoint: \n" << imagePoint << std::endl;
+  //std::cout << "backProject imagePoint: \n" << imagePoint << std::endl;
 
   // 1. Change to unit plane coordinates:
   Eigen::Vector2d x2;
@@ -252,7 +269,7 @@ bool PinholeCamera<DISTORTION_T>::backProject(
   // 2. Un-distort (e.g. Radial-Tangential):
   Eigen::Vector2d x1;
 
-  std::cout << "backProject x2: \n" << x2 << std::endl;
+  //std::cout << "backProject x2: \n" << x2 << std::endl;
 
   distortion_.undistort(x2,&x1);
   
