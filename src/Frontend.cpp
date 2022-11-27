@@ -52,6 +52,35 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   // BRISK detector and descriptor
   detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(10, 0, 100, 2000));
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
+  
+  // leverage camera-aware BRISK (caution: needs the *_new* maps...)
+  cv::Mat rays = cv::Mat(imageHeight, imageWidth, CV_32FC3);
+  cv::Mat imageJacobians = cv::Mat(imageHeight, imageWidth, CV_32FC(6));
+  for (int v=0; v<imageHeight; ++v) {
+    for (int u=0; u<imageWidth; ++u) {
+      Eigen::Vector3d ray;
+      Eigen::Matrix<double, 2, 3> jacobian;
+      if(camera_.backProject(Eigen::Vector2d(u,v), &ray)) {
+        ray.normalize();
+      } else {
+        ray.setZero();
+      }
+      rays.at<cv::Vec3f>(v,u) = cv::Vec3f(ray[0],ray[1],ray[2]);
+      Eigen::Vector2d pt;
+      if(camera_.project(ray, &pt, &jacobian)
+         ==cameras::ProjectionStatus::Successful) {
+        cv::Vec6f j;
+        j[0]=jacobian(0,0);
+        j[1]=jacobian(0,1);
+        j[2]=jacobian(0,2);
+        j[3]=jacobian(1,0);
+        j[4]=jacobian(1,1);
+        j[5]=jacobian(1,2);
+        imageJacobians.at<cv::Vec6f>(v,u) = j;
+      }
+    }
+  }
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, 185.6909);
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -62,41 +91,65 @@ bool  Frontend::loadMap(std::string path) {
   
   // read each line
   std::string line;
-  uint64_t id=1;
+  std::set<uint64_t> lmIds;
+  uint64_t poseId = 0;
+  LandmarkVec landmarks;
   while (std::getline(mapfile, line)) {
-    Landmark landmark;
 
     // Convert to stringstream
     std::stringstream ss(line);
+    
+    if(0==line.compare(0, 7,"frame: ")) {
+      // store previous set into map
+      landmarks_[poseId] = landmarks;
+      // move to filling next set of landmarks
+      poseId = std::stoi(line.substr(7,line.size()-1));
+      landmarks.clear();
+    } else {
+      if(poseId>0) {
+      
+        // get keypoint idx
+        size_t keypointIdx;
+        std::string keypointIdxString;
+        std::getline(ss, keypointIdxString, ',');
+        std::stringstream(keypointIdxString) >> keypointIdx;
+        
+        // get landmark id
+        uint64_t landmarkId;
+        std::string landmarkIdString;
+        std::getline(ss, landmarkIdString, ',');
+        std::stringstream(landmarkIdString) >> landmarkId;
+        
+        // read 3d position
+        Landmark landmark;
+        for(int i=0; i<3; ++i) {
+          std::string coordString;
+          std::getline(ss, coordString, ',');
+          double coord;
+          std::stringstream(coordString) >> coord;
+          landmark.point[i] = coord;
+        }
 
-    // read 3d position
-    for(int i=0; i<3; ++i) {
-      std::string coordString;
-      std::getline(ss, coordString, ',');
-      double coord;
-      std::stringstream(coordString) >> coord;
-      landmark.point[i] = coord;
-    }
-
-    // Get each descriptor
-    std::string descriptorstring;
-    while(ss.good()){
-      std::getline(ss, descriptorstring, ',');
-      cv::Mat descriptor(1,48,CV_8UC1);
-      for(int col=0; col<48; ++col) {
-        uint32_t byte;
-        std::stringstream(descriptorstring.substr(2*col,2)) >> std::hex >> byte;
-        descriptor.at<uchar>(0,col) = byte;
-      }
-      landmark.descriptors.push_back(descriptor);
-    }
-
-    // store into map
-    landmarks_[id] = landmark;
-    id++;
+        // Get descriptor
+        std::string descriptorstring;
+        std::getline(ss, descriptorstring);
+        landmark.descriptor = cv::Mat(1,48,CV_8UC1);
+        for(int col=0; col<48; ++col) {
+          uint32_t byte;
+          std::stringstream(descriptorstring.substr(2*col,2)) >> std::hex >> byte;
+          landmark.descriptor.at<uchar>(0,col) = byte;
+        }
+        lmIds.insert(landmarkId);
+        landmarks.push_back(landmark);
+      }      
+    } 
   }
-  std::cout << "loaded " << landmarks_.size() << " landmarks." << std::endl;
-  return landmarks_.size() > 0;
+  if(poseId>0) {
+    // store into map
+    landmarks_[poseId] = landmarks;
+  }
+  std::cout << "loaded " << lmIds.size() << " landmarks from " << landmarks_.size() << " poses." << std::endl;
+  return lmIds.size() > 0;
 }
 
 int Frontend::detectAndDescribe(
@@ -177,15 +230,20 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   detectAndDescribe(grayScale, extractionDirection, keypoints, descriptors);
 
   // TODO match to map:
-  for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
-    bool matched = false;
-    uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
-    for(auto & lm : landmarks_) { // go through all landmarks in the map
-      for(auto lmDescriptor : lm.second.descriptors) { // check agains all available descriptors
+  const int numPosesToMatch = 3;
+  int checkedPoses = 0;
+  for(const auto& lms : landmarks_) { // go through all poses
+    for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
+      for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
+        uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
         const float dist = brisk::Hamming::PopcntofXORed(
-                keypointDescriptor, lmDescriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
+              keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
         // TODO check if a match and process accordingly
       }
+    }
+    checkedPoses++;
+    if(checkedPoses>=numPosesToMatch) {
+      break;
     }
   }
 

@@ -86,11 +86,12 @@ class Frontend
   /// \brief A simple class to store a landmark with position and descriptors.
   struct Landmark {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    cv::Mat descriptor; ///< The descriptor.
     Eigen::Vector3d point; ///< The 3d point in World coordinates.
-    std::vector<cv::Mat> descriptors; ///< The descriptors: organised one descriptor per row.
+    uint64_t landmarkId;
   };
-  std::map<uint64_t, Landmark, std::less<uint64_t>, 
-      Eigen::aligned_allocator<std::pair<const uint64_t, Landmark> > > landmarks_; ///< Landmarks by ID.
+  typedef std::vector<Landmark, Eigen::aligned_allocator<Landmark>> LandmarkVec;
+  std::map<uint64_t, LandmarkVec> landmarks_; ///< Landmarks grouped by pose ID.
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor
