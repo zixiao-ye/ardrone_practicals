@@ -34,6 +34,8 @@
   <!-- Launch estimator / control arp_node. -->
   <node name="arp_node" pkg="ardrone_practicals" type="arp_node" output="screen">
     <!-- Camera parameters-->
+    <param name="imageWidth" value="640" />
+    <param name="imageHeight " value="360" />
     <param name="fu" value="582.009973" />
     <param name="fv" value="579.264058" />
     <param name="cu" value="316.339009" />

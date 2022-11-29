@@ -18,6 +18,11 @@
 
 #include <arp/Autopilot.hpp>
 
+//NEW
+#include "arp/cameras/PinholeCamera.hpp"
+#include "arp/cameras/RadialTangentialDistortion.hpp"
+
+
 class Subscriber
 {
  public:
@@ -82,10 +87,24 @@ int main(int argc, char **argv)
   std::string str1="Instructions: arrow keys for going forward/backward and left/right";
   std::string str2="W/S for going up/down, A/D for yawing left/right";
 
-  std::string fu, fv, cu, cv, k1, k2, p1, p2;
-  if (nh.getParam("/fu", fu))
+  double imageWidth, imageHeight, fu, fv, cu, cv, k1, k2, p1, p2;
+  if (nh.getParam("/arp_node/imageWidth", imageWidth) && nh.getParam("/arp_node/imageHeight", imageHeight) 
+        &&nh.getParam("/arp_node/fu", fu) && nh.getParam("/arp_node/fv", fv) 
+        && nh.getParam("/arp_node/cu", cu) && nh.getParam("/arp_node/cv", cv) 
+        && nh.getParam("/arp_node/k1", k1) && nh.getParam("/arp_node/k2", k2) 
+        && nh.getParam("/arp_node/p1", p1) && nh.getParam("/arp_node/p2", p2) )
   {
-    std::cout<<fv<<std::endl;
+    std::cout<<"Using the next camera parameters: "<<std::endl;
+    std::cout<<" - imageWidth: " << imageWidth <<std::endl;
+    std::cout<<" - imageHeight: " << imageHeight <<std::endl;
+    std::cout<<" - fu: " << fu <<std::endl;
+    std::cout<<" - fv: " << fv <<std::endl;
+    std::cout<<" - cu: " << cu <<std::endl;
+    std::cout<<" - cv: " << cv <<std::endl;
+    std::cout<<" - k1: " << k1 <<std::endl;
+    std::cout<<" - k2: " << k2 <<std::endl;
+    std::cout<<" - p1: " << p1 <<std::endl;
+    std::cout<<" - p2: " << p2 <<std::endl;
   }
   else{
     std::cout<<"Fail to get the parameter!"<<std::endl;
@@ -94,16 +113,15 @@ int main(int argc, char **argv)
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
   cv::Mat image;
+  cv::Mat undistortImage;
+  
+  // create the camera model
+  arp::cameras::RadialTangentialDistortion distortion = arp::cameras::RadialTangentialDistortion(k1, k2, p1, p2);
+  arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> pinholeCamera(imageWidth, imageHeight, fu, fv, cu, cv, distortion);
+  pinholeCamera.initialiseUndistortMaps(imageWidth, imageHeight, fu,  fv, cu,  cv);
+
   std::string s;
   while (ros::ok()) {
-
-  /* if (nh.getParam("/fu", fu))
-  {
-    std::cout<<fu<<std::endl;
-  }
-  else{
-    std::cout<<"Fail to get the parameter!"<<std::endl;
-  } */
 
     ros::spinOnce();
     ros::Duration dur(0.04);
@@ -118,6 +136,10 @@ int main(int argc, char **argv)
 
     // render image, if there is a new one available
     if(subscriber.getLastImage(image)) {
+      
+      //Undistort image
+      pinholeCamera.undistortImage(image, undistortImage);
+      image = undistortImage;
 
       // TODO: add overlays to the cv::Mat image, e.g. text
       cv::putText(image, 

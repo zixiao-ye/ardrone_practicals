@@ -34,7 +34,7 @@ TEST(PinholeCamera, projectBackProject)
 // TODO: write more tests here...
 
 // Test the Jacobian
- TEST(PinholeCamera, TEST2)
+ TEST(PinholeCamera, jacobians)
 {
   // create an arbitrary camera model
   arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> pinholeCamera = 
@@ -105,9 +105,9 @@ TEST(PinholeCamera, projectBackProject)
   std::cout << "TEST imagePoint1: \n" << imagePoint1 << std::endl;
   std::cout << "TEST imagePoint2: \n" << imagePoint2 << std::endl; */
 
-  std::cout << "pointJacobian: \n" << pointJacobian << std::endl;
+/*   std::cout << "pointJacobian: \n" << pointJacobian << std::endl;
   std::cout << "numeric_pointJacobian: \n" << numeric_pointJacobian << std::endl;
-
+ */
   Eigen::Vector3d ray_C;
   pinholeCamera.backProject(imagePoint,&ray_C);
 

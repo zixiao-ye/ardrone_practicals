@@ -63,6 +63,7 @@ PinholeCamera<DISTORTION_T>::PinholeCamera(int imageWidth,
   one_over_fu_ = 1.0 / fu_;  //< 1.0 / fu_
   one_over_fv_ = 1.0 / fv_;  //< 1.0 / fv_
   fu_over_fv_ = fu_ / fv_;  //< fu_ / fv_
+  std::cout << "Camera up!" << std::endl;
 }
 
 // Initialise undistort maps to defaults
