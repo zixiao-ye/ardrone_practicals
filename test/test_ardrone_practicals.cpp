@@ -43,7 +43,7 @@ TEST(PinholeCamera, projectBackProject)
   // create a random image point in the camera coordinate frame C
   auto point_C = pinholeCamera.createRandomVisiblePoint();
   
-  double delta = 1e-4;
+  double delta = 1e-5;
 
   Eigen::Matrix<double, 2, 3> pointJacobian;
   Eigen::Matrix<double, 2, 3> numeric_pointJacobian;
@@ -105,14 +105,15 @@ TEST(PinholeCamera, projectBackProject)
   std::cout << "TEST imagePoint1: \n" << imagePoint1 << std::endl;
   std::cout << "TEST imagePoint2: \n" << imagePoint2 << std::endl; */
 
-/*   std::cout << "pointJacobian: \n" << pointJacobian << std::endl;
+  /* std::cout << "pointJacobian: \n" << pointJacobian << std::endl;
   std::cout << "numeric_pointJacobian: \n" << numeric_pointJacobian << std::endl;
- */
+  std::cout << "pointJacobian: \n" << (pointJacobian - numeric_pointJacobian).norm() << std::endl; */
+
   Eigen::Vector3d ray_C;
   pinholeCamera.backProject(imagePoint,&ray_C);
 
   // now they should align:
-  EXPECT_TRUE(fabs(ray_C.normalized().transpose()*point_C.normalized()-1.0)<1.0e-10);
+  EXPECT_TRUE((pointJacobian - numeric_pointJacobian).norm()<1.0e-6);
 } 
 
 
