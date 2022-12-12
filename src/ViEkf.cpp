@@ -177,11 +177,23 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     // i.e. we do x_k = f(x_k_minus_1).
     // Also, we compute the matrix F (linearisation of f()) related to
     // delta_chi_k = F * delta_chi_k_minus_1.
+    kinematics::ImuKinematicsJacobian F;
+    kinematics::Imu::stateTransition(x_, z_k_minus_1, z_k, x_propagated_, &F);
+    x_ = x_propagated_;
 
     // TODO: propagate covariance matrix P_
+    kinematics::ImuKinematicsJacobian noise;
+    noise.setIdentity();
+    noise.block<3,3>(0,0).setZero();
+    noise.block<3,3>(3,3) *= sigma_c_gyr_ * delta_t;
+    noise.block<3,3>(6,6) *= sigma_c_acc_ * delta_t;
+    noise.block<3,3>(9,9) *= sigma_c_gw_ * delta_t;
+    noise.block<3,3>(12,12) *= sigma_c_aw_ * delta_t;
+
+    P_ = F * P_ * F.transpose() + noise;
 
   }
-  return false;  // TODO: change to true once implemented
+  return true;  // TODO: change to true once implemented
 }
 
 // Pass a set of keypoint measurements to trigger an update.
