@@ -234,6 +234,7 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   int checkedPoses = 0;
   std::vector<cv::Point3d> worldPoints;
   std::vector<cv::Point2d> imagePoints;
+  DetectionVec detections_copy;
   for(const auto& lms : landmarks_) { // go through all poses
     for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
@@ -245,13 +246,17 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
         {
           cv::KeyPoint& ckp = keypoints[k];
           Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
-
           cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
           cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);
           if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
           {
+            Detection detection;
+            detection.keypoint = kp;
+            detection.landmark = lm.point;
+            detection.landmarkId = lm.landmarkId;
             imagePoints.push_back(imagePoint);
             worldPoints.push_back(worldPoint);
+            detections_copy.push_back(detection);
           }
         }
         
@@ -266,16 +271,30 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
 
   std::vector<int> inliers;
-  bool ransanSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
+  bool ransacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
 
   // TODO set detections
+  for (size_t i = 0; i < inliers.size(); i++)
+  {
+    detections.push_back(detections_copy[inliers[i]]);
+  }
   
-
 
   // TODO visualise by painting stuff into visualisationImage
-
+  for (size_t i = 0; i < imagePoints.size(); i++)
+  {
+    if (std::find(inliers.begin(), inliers.end(), i) != inliers.end())
+    {
+      cv::circle(visualisationImage, imagePoints[i], 3, cv::Scalar(0, 255, 0));
+    }
+    else
+    {
+      cv::circle(visualisationImage, imagePoints[i], 3, cv::Scalar(0, 0, 255));
+    }    
+  }
   
-  return false; // TODO return true if successful...
+  
+  return ransacSuccess; // TODO return true if successful...
 }
 
 }  // namespace arp
