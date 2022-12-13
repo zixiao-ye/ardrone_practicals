@@ -185,10 +185,10 @@ bool ViEkf::predict(uint64_t from_timestampMicroseconds,
     kinematics::ImuKinematicsJacobian noise;
     noise.setIdentity();
     noise.block<3,3>(0,0).setZero();
-    noise.block<3,3>(3,3) *= sigma_c_gyr_ * delta_t;
-    noise.block<3,3>(6,6) *= sigma_c_acc_ * delta_t;
-    noise.block<3,3>(9,9) *= sigma_c_gw_ * delta_t;
-    noise.block<3,3>(12,12) *= sigma_c_aw_ * delta_t;
+    noise.block<3,3>(3,3) *= pow(sigma_c_gyr_,2) * delta_t;
+    noise.block<3,3>(6,6) *= pow(sigma_c_acc_,2) * delta_t;
+    noise.block<3,3>(9,9) *= pow(sigma_c_gw_,2) * delta_t;
+    noise.block<3,3>(12,12) *= pow(sigma_c_aw_,2) * delta_t;
 
     P_ = F * P_ * F.transpose() + noise;
 

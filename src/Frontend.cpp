@@ -232,6 +232,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   // TODO match to map:
   const int numPosesToMatch = 3;
   int checkedPoses = 0;
+  std::vector<cv::Point3d> worldPoints;
+  std::vector<cv::Point2d> imagePoints;
   for(const auto& lms : landmarks_) { // go through all poses
     for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
       for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
@@ -239,6 +241,20 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
         const float dist = brisk::Hamming::PopcntofXORed(
               keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
         // TODO check if a match and process accordingly
+        if (dist < 60)
+        {
+          cv::KeyPoint& ckp = keypoints[k];
+          Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
+
+          cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
+          cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);
+          if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
+          {
+            imagePoints.push_back(imagePoint);
+            worldPoints.push_back(worldPoint);
+          }
+        }
+        
       }
     }
     checkedPoses++;
@@ -249,9 +265,15 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
 
   // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
 
+  std::vector<int> inliers;
+  bool ransanSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
+
   // TODO set detections
+  
+
 
   // TODO visualise by painting stuff into visualisationImage
+
   
   return false; // TODO return true if successful...
 }
