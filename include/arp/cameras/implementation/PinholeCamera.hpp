@@ -193,6 +193,21 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
 
   * imagePoint = u;
 
+  //Check if point is out of image
+  if (!isInImage(*imagePoint)){
+    return ProjectionStatus::OutsideImage;
+  }
+
+  //Check if point is behind camera
+  if (point(2) < 0){
+    return ProjectionStatus::Behind;
+  }
+
+  //Check if point is invalid
+  if (abs(point(2)) < 1e-6){
+    return ProjectionStatus::Invalid;
+  }
+
   //std::cout << "project imagePoint: \n" << u << std::endl;
 
   return ProjectionStatus::Successful;
@@ -240,6 +255,21 @@ ProjectionStatus PinholeCamera<DISTORTION_T>::project(
   // (4)
   * pointJacobian = F * D * L;
   //std::cout << "pointJacobian: \n" << *pointJacobian << std::endl;
+
+  //Check if point is out of image
+  if (!isInImage(*imagePoint)){
+    return ProjectionStatus::OutsideImage;
+  }
+
+  //Check if point is behind camera
+  if (point(2) < 0){
+    return ProjectionStatus::Behind;
+  }
+
+  //Check if point is invalid
+  if (abs(point(2)) < 1e-6){
+    return ProjectionStatus::Invalid;
+  }
 
   //throw std::runtime_error("not implemented project pointJacobian");
   return ProjectionStatus::Successful; 

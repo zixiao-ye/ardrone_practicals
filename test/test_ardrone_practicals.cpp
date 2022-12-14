@@ -101,14 +101,6 @@ TEST(PinholeCamera, projectBackProject)
   numeric_pointJacobian   << (imagePoint1[0]-imagePoint2[0])/(2*delta), (imagePoint3[0]-imagePoint4[0])/(2*delta), (imagePoint5[0]-imagePoint6[0])/(2*delta),
                              (imagePoint1[1]-imagePoint2[1])/(2*delta), (imagePoint3[1]-imagePoint4[1])/(2*delta), (imagePoint5[1]-imagePoint6[1])/(2*delta);
 
-  /* std::cout << "TEST imagePoint: \n" << imagePoint << std::endl;
-  std::cout << "TEST imagePoint1: \n" << imagePoint1 << std::endl;
-  std::cout << "TEST imagePoint2: \n" << imagePoint2 << std::endl; */
-
-  /* std::cout << "pointJacobian: \n" << pointJacobian << std::endl;
-  std::cout << "numeric_pointJacobian: \n" << numeric_pointJacobian << std::endl;
-  std::cout << "pointJacobian: \n" << (pointJacobian - numeric_pointJacobian).norm() << std::endl; */
-
   Eigen::Vector3d ray_C;
   pinholeCamera.backProject(imagePoint,&ray_C);
 

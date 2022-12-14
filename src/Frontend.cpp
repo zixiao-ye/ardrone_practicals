@@ -279,17 +279,19 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     detections.push_back(detections_copy[inliers[i]]);
   }
   
-
+  visualisationImage = image;
   // TODO visualise by painting stuff into visualisationImage
   for (size_t i = 0; i < imagePoints.size(); i++)
   {
     if (std::find(inliers.begin(), inliers.end(), i) != inliers.end())
     {
-      cv::circle(visualisationImage, imagePoints[i], 3, cv::Scalar(0, 255, 0));
+      //std::cout<<"matching"<<std::endl;
+      cv::circle(visualisationImage, imagePoints[i], 5, cv::Scalar(0, 255, 0));
     }
     else
     {
-      cv::circle(visualisationImage, imagePoints[i], 3, cv::Scalar(0, 0, 255));
+      //std::cout<<"not matching"<<std::endl;
+      cv::circle(visualisationImage, imagePoints[i], 5, cv::Scalar(0, 0, 255));
     }    
   }
   

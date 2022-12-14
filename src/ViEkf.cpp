@@ -272,21 +272,35 @@ bool ViEkf::update(const Detection & detection){
   // TODO: transform the corner point from world frame into the camera frame
   // (remember the camera projection will assume the point is represented
   // in camera coordinates):
+  Eigen::Vector4d hp_C;
+  hp_C = T_SC_.inverse() * T_WS.inverse() * hp_W;
 
   // TODO: calculate the reprojection error y (residual)
   // using the PinholeCamera::project
-  const Eigen::Vector2d y;  // = TODO
+  Eigen::Vector2d u;
+  Eigen::Matrix<double, 2, 3> U;
+  cameras::ProjectionStatus projectionStatus = cameraModel_.project(hp_C.head<3>(), &u, &U);
+  const Eigen::Vector2d y = detection.keypoint - u;  // = TODO
+  
 
   // TODO: check validity of projection -- return false if not successful!
-
+  if (projectionStatus != cameras::ProjectionStatus::Successful)
+  {
+    return false;
+  }
+  
   // TODO: calculate measurement Jacobian H
+  Eigen::Matrix<double, 2, 15> H;
+  H.setZero();
+  H.block<2, 3>(0, 0) = U * T_SC_.inverse().R() * -T_WS.R().transpose();
+  H.block<2, 3>(0, 3) = U * T_SC_.inverse().R() * T_WS.R().transpose()*kinematics::crossMx(detection.landmark-x_.t_WS);
 
   // Obtain the measurement covariance form parameters:
   const double r = sigma_imagePoint_ * sigma_imagePoint_;
   Eigen::Matrix2d R = Eigen::Vector2d(r, r).asDiagonal();  // the measurement covariance
 
   // TODO: compute residual covariance S
-  Eigen::Matrix2d S;  // = TODO
+  Eigen::Matrix2d S = H*P_*H.transpose() + R;  // = TODO
 
   // chi2 test
   if(y.transpose()*S.inverse()*y > 40.0){
@@ -295,14 +309,22 @@ bool ViEkf::update(const Detection & detection){
   }
 
   // TODO: compute Kalman gain K
+  Eigen::Matrix<double, 15, 2> K = P_*H.transpose()*S.inverse();
 
   // TODO: compute increment Delta_chi
+  Eigen::Matrix<double, 15, 1> Delta_chi = K * y;
 
   // TODO: perform update. Note: multiplicative for the quaternion!!
+  x_.t_WS += Delta_chi.segment<3>(0);
+  x_.q_WS = kinematics::deltaQ(Delta_chi.segment<3>(3)) * x_.q_WS;
+  x_.v_W += Delta_chi.segment<3>(6);
+  x_.b_g += Delta_chi.segment<3>(9);
+  x_.b_a += Delta_chi.segment<3>(12);
 
   // TODO: update to covariance matrix:
+  P_ = (Eigen::MatrixXd::Identity(15, 15) - K * H) * P_;
 
-  return false;  // TODO: change to true once implemented...
+  return true;  // TODO: change to true once implemented...
 }
 
 }  // namespace arp
