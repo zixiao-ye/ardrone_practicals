@@ -14,6 +14,12 @@
 #include <Eigen/Core>
 #include <opencv2/features2d/features2d.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#include <DBoW2/DBoW2.h>
+#pragma GCC diagnostic pop
+#include <DBoW2/FBrisk.hpp>
+
 #include <arp/cameras/PinholeCamera.hpp>
 #include <arp/cameras/RadialTangentialDistortion.hpp>
 #include <arp/cameras/NoDistortion.hpp>
@@ -47,6 +53,11 @@ class Frontend
   /// \parameter path The full path to the map file.
   /// \return True on success.
   bool loadMap(std::string path);
+  
+  /// \brief Load DBoW2 vocabulary
+  /// \parameter path The full path to the vocabulary file.
+  /// \return True on success.
+  bool loadDBoW2Voc(std::string path);
 
   /// \brief Detect and match keypoints in image that can be fed to an estimator.
   /// \warning If not returning true, there may still be detections, but not verified
@@ -95,6 +106,17 @@ class Frontend
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor
+  
+  
+  /// \brief DBoW for loop closure: BRISK Vocabulary.
+  typedef DBoW2::TemplatedVocabulary<DBoW2::FBrisk::TDescriptor, DBoW2::FBrisk> FBriskVocabulary;
+  /// \brief DBoW for loop closure: BRISK Database.
+  typedef DBoW2::TemplatedDatabase<DBoW2::FBrisk::TDescriptor, DBoW2::FBrisk> FBriskDatabase;
+
+  FBriskVocabulary dBowVocabulary_; ///< The BRISK DBoW vocabulary -- load from disk.
+
+  /// \brief The DBoW database to add frames to. false = do not use direct index.
+  FBriskDatabase dBowDatabase_ = FBriskDatabase(dBowVocabulary_, false, 0);
 
  private:
   Frontend() = delete;

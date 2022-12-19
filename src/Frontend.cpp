@@ -152,6 +152,11 @@ bool  Frontend::loadMap(std::string path) {
   return lmIds.size() > 0;
 }
 
+bool Frontend::loadDBoW2Voc(std::string path) {
+  dBowVocabulary_.load(path);
+  return true; 
+}
+
 int Frontend::detectAndDescribe(
     const cv::Mat& grayscaleImage, const Eigen::Vector3d& extractionDirection,
     std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) const {
