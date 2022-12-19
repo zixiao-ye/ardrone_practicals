@@ -103,6 +103,7 @@ class Frontend
   };
   typedef std::vector<Landmark, Eigen::aligned_allocator<Landmark>> LandmarkVec;
   std::map<uint64_t, LandmarkVec> landmarks_; ///< Landmarks grouped by pose ID.
+  std::map<uint64_t, std::set<uint64_t>> covisibilities_; ///< Set of covisibilities by pose ID.
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor

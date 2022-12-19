@@ -102,8 +102,22 @@ bool  Frontend::loadMap(std::string path) {
     if(0==line.compare(0, 7,"frame: ")) {
       // store previous set into map
       landmarks_[poseId] = landmarks;
+      // get pose id:
+      std::stringstream frameSs(line.substr(7,line.size()-1));
+      frameSs >> poseId;
+      if(!frameSs.eof()) {
+        std::string covisStr;
+        frameSs >> covisStr; // comma
+        frameSs >> covisStr;
+        if(0==covisStr.compare("covisibilities:")) {
+          while(!frameSs.eof()) {
+            uint64_t covisId;
+            frameSs >> covisId;
+            covisibilities_[poseId].insert(covisId);
+          }
+        }
+      }
       // move to filling next set of landmarks
-      poseId = std::stoi(line.substr(7,line.size()-1));
       landmarks.clear();
     } else {
       if(poseId>0) {
