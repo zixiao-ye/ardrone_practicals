@@ -108,16 +108,13 @@ class Frontend
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor
   
-  
   /// \brief DBoW for loop closure: BRISK Vocabulary.
   typedef DBoW2::TemplatedVocabulary<DBoW2::FBrisk::TDescriptor, DBoW2::FBrisk> FBriskVocabulary;
   /// \brief DBoW for loop closure: BRISK Database.
   typedef DBoW2::TemplatedDatabase<DBoW2::FBrisk::TDescriptor, DBoW2::FBrisk> FBriskDatabase;
 
   FBriskVocabulary dBowVocabulary_; ///< The BRISK DBoW vocabulary -- load from disk.
-
-  /// \brief The DBoW database to add frames to. false = do not use direct index.
-  FBriskDatabase dBowDatabase_ = FBriskDatabase(dBowVocabulary_, false, 0);
+  FBriskDatabase dBowDatabase_;   ///< The DBoW database to add frames to.
 
  private:
   Frontend() = delete;

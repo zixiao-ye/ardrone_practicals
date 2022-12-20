@@ -167,7 +167,11 @@ bool  Frontend::loadMap(std::string path) {
 }
 
 bool Frontend::loadDBoW2Voc(std::string path) {
+  std::cout << "Loading DBoW2 vocabulary from " << path << std::endl;
   dBowVocabulary_.load(path);
+  // Hand over vocabulary to dataset. false = do not use direct index:
+  dBowDatabase_.setVocabulary(dBowVocabulary_, false, 0);
+  std::cout << "loaded DBoW2 vocabulary with " << dBowVocabulary_.size() << " words." << std::endl;
   return true; 
 }
 
