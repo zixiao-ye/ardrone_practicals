@@ -17,6 +17,7 @@
 #include <std_srvs/Empty.h>
 
 #include <arp/Autopilot.hpp>
+#include <arp/Frontend.hpp>
 
 //NEW
 #include "arp/cameras/PinholeCamera.hpp"
