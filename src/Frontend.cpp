@@ -12,6 +12,7 @@
 #include <opencv2/calib3d.hpp>
 #include <ros/ros.h>
 
+
 #include <brisk/brisk.h>
 
 #include <arp/Frontend.hpp>
@@ -50,7 +51,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
   distCoeffs_.at<double>(3) = p2;
   
   // BRISK detector and descriptor
-  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(10, 0, 100, 2000));
+  detector_.reset(new brisk::ScaleSpaceFeatureDetector<brisk::HarrisScoreCalculator>(5, 2, 50, 750)); //Original values: 10, 0, 100, 2000
   extractor_.reset(new brisk::BriskDescriptorExtractor(true, false));
   
   // leverage camera-aware BRISK (caution: needs the *_new* maps...)
@@ -80,7 +81,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
       }
     }
   }
-  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, 185.6909);
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, (focalLengthU + focalLengthV) / 2);
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -175,6 +176,40 @@ bool Frontend::loadDBoW2Voc(std::string path) {
   return true; 
 }
 
+bool Frontend::buildDatabase() {
+  // add landmarks to the database
+  DBoW2::QueryResults ret;
+  for(const auto& lms:landmarks_)
+  {
+    auto ID = lms.first;
+    std::vector<DBoW2::FBrisk::TDescriptor> features;
+    for (const auto& lm:lms.second) // go through all landmarks seen from this pose
+    { 
+      //<std::vector<cv::Mat> > vec;
+      cv::Mat copy = lm.descriptor.clone();
+      //uchar* descriptor = copy.data;
+      features.push_back(copy);
+    }
+    auto index = dBowDatabase_.add(features);
+    db2kf.insert({index, ID}); //Matching the database_ID and the keyframe_ID
+    //std::cout<<index<<ID<<std::endl;
+    /* dBowDatabase_.query(features, ret, -1);
+    std::cout << "Searching for Keyframe:: "<< ret<<std::endl; */
+  }
+  /* for (size_t i = 0; i < db2kf.size(); i++)
+  {
+    std::cout<<i<<db2kf[i]<<std::endl;
+  } */
+
+  /* for(const auto& lms : landmarks_) { // go through all poses
+    std::cout<<lms.first<<std::endl;
+  } */
+  
+  
+
+  return true; 
+}
+
 int Frontend::detectAndDescribe(
     const cv::Mat& grayscaleImage, const Eigen::Vector3d& extractionDirection,
     std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) const {
@@ -253,48 +288,93 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   detectAndDescribe(grayScale, extractionDirection, keypoints, descriptors);
 
   // TODO match to map:
-  const int numPosesToMatch = 3;
-  int checkedPoses = 0;
+  const int numPosesToMatch = 3; //P3 check only first 3 frames
+  int checkedPoses = 0; //P3
+
+  std::vector<DBoW2::FBrisk::TDescriptor> features;
+  DBoW2::QueryResults ret;
+
+  //int rows = descriptors.rows;
+  //int cols = descriptors.cols;
+  //std::cout<<rows<<" "<<cols<<std::endl;
+
+  for(size_t k = 0; k < keypoints.size(); ++k){
+    //uchar* keypointDescriptor = descriptors.data + k*48;
+    cv::Mat copy = descriptors.row(k).clone();
+    features.push_back(copy);
+  }
+
+  int num_ret = 3;
+  std::vector<uint64_t> query_frames_;
+  dBowDatabase_.query(features, ret, num_ret);
+
+  for (size_t i = 0; i < num_ret; i++)
+  {
+    query_frames_.push_back(db2kf[ret[i].Id]);
+  }
+  //std::cout << "Searching for Keyframe:: "<< ret<<std::endl;
+
   std::vector<cv::Point3d> worldPoints;
   std::vector<cv::Point2d> imagePoints;
   DetectionVec detections_copy;
-  for(const auto& lms : landmarks_) { // go through all poses
-    for(const auto& lm : lms.second) { // go through all landmarks seen from this pose
-      for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
-        uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
-        const float dist = brisk::Hamming::PopcntofXORed(
-              keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
-        // TODO check if a match and process accordingly
-        if (dist < 60)
-        {
-          cv::KeyPoint& ckp = keypoints[k];
-          Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
-          cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
-          cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);
-          if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
-          {
-            Detection detection;
-            detection.keypoint = kp;
-            detection.landmark = lm.point;
-            detection.landmarkId = lm.landmarkId;
-            imagePoints.push_back(imagePoint);
-            worldPoints.push_back(worldPoint);
-            detections_copy.push_back(detection);
-          }
-        }
-        
+
+  int max_distance = 20;
+  int max_covisible = 4;
+
+  for(const auto& fm_id : query_frames_) { // go through active keyframes
+    std::set<uint64_t> covisibles /* = covisibilities_[fm_id] */;
+    covisibles.insert(fm_id);
+    for(auto itr:covisibilities_[fm_id]){
+      int dist = (fm_id > itr) ? fm_id - itr :  itr - fm_id;
+      if (dist < max_distance && covisibles.size() < max_covisible)
+      {
+        covisibles.insert(itr);  
+        //std::cout<<"insert covisible frame: "<<itr<<std::endl;
+      }
+      if (covisibles.size() >= max_covisible){
+        break;
       }
     }
-    checkedPoses++;
+
+    for(const auto& likely_frame_id : covisibles){ // go through active keyframes + covisibles
+      for(const auto lm : landmarks_[likely_frame_id]) { // go through all landmarks seen from this pose
+        for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
+          uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
+          const float dist = brisk::Hamming::PopcntofXORed(
+                keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
+          // TODO check if a match and process accordingly
+          if (dist < 60)
+          {
+            cv::KeyPoint& ckp = keypoints[k];
+            Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
+            cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
+            cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);
+            if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
+            {
+              Detection detection;
+              detection.keypoint = kp;
+              detection.landmark = lm.point;
+              detection.landmarkId = lm.landmarkId;
+              imagePoints.push_back(imagePoint);
+              worldPoints.push_back(worldPoint);
+              detections_copy.push_back(detection);
+            }
+          }
+          
+        }
+      }
+    }
+    /* checkedPoses++;
     if(checkedPoses>=numPosesToMatch) {
       break;
-    }
+    } */
   }
 
   // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
 
   std::vector<int> inliers;
   bool ransacSuccess = ransac(worldPoints, imagePoints, T_CW, inliers);
+  //std::cout<<"The value of needsReInitialisation: "<<needsReInitialisation<<" The value of ransacSuccess: "<<ransacSuccess<<std::endl;
 
   // TODO set detections
   for (size_t i = 0; i < inliers.size(); i++)
@@ -309,15 +389,19 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     if (std::find(inliers.begin(), inliers.end(), i) != inliers.end())
     {
       //std::cout<<"matching"<<std::endl;
-      cv::circle(visualisationImage, imagePoints[i], 5, cv::Scalar(0, 255, 0));
+      cv::circle(visualisationImage, imagePoints[i], 8, cv::Scalar(0, 255, 0));
     }
     else
     {
       //std::cout<<"not matching"<<std::endl;
-      cv::circle(visualisationImage, imagePoints[i], 5, cv::Scalar(0, 0, 255));
+      cv::circle(visualisationImage, imagePoints[i], 8, cv::Scalar(0, 0, 255));
     }    
   }
   
+  if (needsReInitialisation)
+  {
+    return true;
+  }
   
   return ransacSuccess; // TODO return true if successful...
 }

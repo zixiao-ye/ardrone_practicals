@@ -59,6 +59,10 @@ class Frontend
   /// \return True on success.
   bool loadDBoW2Voc(std::string path);
 
+  /// \brief Build database
+  /// \return True on success.
+  bool buildDatabase();
+
   /// \brief Detect and match keypoints in image that can be fed to an estimator.
   /// \warning If not returning true, there may still be detections, but not verified
   ///          and T_CW will be invalid.
@@ -104,6 +108,7 @@ class Frontend
   typedef std::vector<Landmark, Eigen::aligned_allocator<Landmark>> LandmarkVec;
   std::map<uint64_t, LandmarkVec> landmarks_; ///< Landmarks grouped by pose ID.
   std::map<uint64_t, std::set<uint64_t>> covisibilities_; ///< Set of covisibilities by pose ID.
+  std::map<uint64_t, uint64_t> db2kf;  //Matching the database_ID and the keyframe_ID P4
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor
