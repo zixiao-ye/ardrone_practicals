@@ -30,7 +30,7 @@ namespace arp {
 Frontend::Frontend(int imageWidth, int imageHeight,
                                    double focalLengthU, double focalLengthV,
                                    double imageCenterU, double imageCenterV,
-                                   double k1, double k2, double p1, double p2) :
+                                   double k1, double k2, double p1, double p2, double focalLength) :
   camera_(imageWidth, imageHeight, focalLengthU, focalLengthV, imageCenterU,
           imageCenterV,
           arp::cameras::RadialTangentialDistortion(k1, k2, p1, p2))
@@ -81,7 +81,7 @@ Frontend::Frontend(int imageWidth, int imageHeight,
       }
     }
   }
-  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, (focalLengthU + focalLengthV) / 2);
+  std::static_pointer_cast<cv::BriskDescriptorExtractor>(extractor_)->setCameraProperties(rays, imageJacobians, focalLength);
 }
 
 bool  Frontend::loadMap(std::string path) {
@@ -269,7 +269,7 @@ bool Frontend::ransac(const std::vector<cv::Point3d>& worldPoints,
   }
   T_CW = kinematics::Transformation(T_CW_mat);
 
-  return ransacSuccess && (double(inliers.size())/double(imagePoints.size()) > 0.7);
+  return ransacSuccess && (double(inliers.size())/double(imagePoints.size()) > 0.6);
 }
 
 bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extractionDirection, 

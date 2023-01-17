@@ -44,10 +44,11 @@ class Frontend
   /// \parameter k2 2nd radial distortion parameter. 
   /// \parameter p1 1st tangential distortion parameter.
   /// \parameter p2 2nd tangential distortion parameter.
+  /// \parameter focalLength The focal length of the camera used in building the map.
   Frontend(int imageWidth, int imageHeight, double focalLengthU,
                            double focalLengthV, double imageCenterU,
                            double imageCenterV, double k1, double k2, double p1,
-                           double p2);
+                           double p2, double focalLength);
 
   /// \brief Load the map
   /// \parameter path The full path to the map file.
