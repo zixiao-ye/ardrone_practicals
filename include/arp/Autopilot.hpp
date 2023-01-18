@@ -22,6 +22,8 @@
 #include <std_msgs/Empty.h>
 #include <std_srvs/Empty.h>
 
+#include <arp/kinematics/Imu.hpp>
+
 namespace arp {
 
 /// \brief The autopilot highlevel interface for commanding the drone manually or automatically.
@@ -54,6 +56,9 @@ class Autopilot {
   /// \brief Set to manual control mode.
   void setAutomatic();
 
+  /// \brief Are we currently in automatic mode?;
+  bool isAutomatic() { return isAutomatic_; }
+
   /// \brief Request flattrim calibration.
   /// \return True on success.
   /// \note This will only work when landed on ground.
@@ -83,6 +88,28 @@ class Autopilot {
   /// \note This will only do something when in manual mode and flying.
   bool manualMove(double forward, double left, double up, double rotateLeft);
 
+  /// \brief Move the drone automatically.
+  /// @param[in] x World x position reference [m].
+  /// @param[in] y World y position reference [m].
+  /// @param[in] z World z position reference [m].
+  /// @param[in] yaw Yaw angle reference [rad].
+  /// \return True on success.
+  /// \note  This will only do something when in automatic mode and flying.
+  bool setPoseReference(double x, double y, double z, double yaw);
+
+  /// \brief Get the pose reference.
+  /// @param[out] x World x position reference [m].
+  /// @param[out] y World y position reference [m].
+  /// @param[out] z World z position reference [m].
+  /// @param[out] yaw Yaw angle reference [rad].
+  /// \return True on success.
+  bool getPoseReference(double& x, double& y, double& z, double& yaw);
+
+  /// \brief The callback from the estimator that sends control outputs to the drone
+  /// \note  This will only do something when in automatic mode and flying.
+  void controllerCallback(uint64_t timeMicroseconds,
+                          const arp::kinematics::RobotState& x);
+
   float getbatteryPercent(){return lastNavdata_.batteryPercent;}
 
  protected:
@@ -111,6 +138,13 @@ class Autopilot {
 
   std::mutex navdataMutex_; ///< We need to lock navdata access due to asynchronous arrival.
   ros::Subscriber subNavdata_; ///< The subscriber for navdata.
+
+  double ref_x_ = 0.0; ///< World frame x position reference [m].
+  double ref_y_ = 0.0; ///< World frame y position reference [m].
+  double ref_z_ = 0.0; ///< World frame z position reference [m].
+  double ref_yaw_ = 0.0; ///< World frame yaw reference [rad].
+  std::mutex refMutex_; ///< We need to lock the reference access due to asynchronous arrival.
+  std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
 };
 
 } // namespace arp
