@@ -26,6 +26,10 @@
     <remap from="ardrone/reset" to="drone/reset"/>
     <remap from="ardrone/land" to="drone/land"/> 
     <remap from="ardrone/navdata" to="drone/navdata"/> 
+
+    <!-- Map camera parameters-->
+    <param name="focal_length" value="185.6909" />
+
     <!-- Camera parameters-->
     <param name="fu" value="185.6909" />
     <param name="fv" value="185.6909" />

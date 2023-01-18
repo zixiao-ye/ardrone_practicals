@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   std::string str1="Instructions: arrow keys for going forward/backward and left/right";
   std::string str2="W/S for going up/down, A/D for yawing left/right";
 
-  double imageWidth, imageHeight, fu, fv, cu, cv, k1, k2, p1, p2;
+  double imageWidth, imageHeight, fu, fv, cu, cv, k1, k2, p1, p2, focal_length;
   if (  nh.getParam("/arp_node/fu", fu) && nh.getParam("/arp_node/fv", fv) 
         && nh.getParam("/arp_node/cu", cu) && nh.getParam("/arp_node/cv", cv) 
         && nh.getParam("/arp_node/k1", k1) && nh.getParam("/arp_node/k2", k2) 
@@ -127,10 +127,15 @@ int main(int argc, char **argv)
     imageHeight = 360;
   }
 
+  if(nh.getParam("/arp_node/focal_length", focal_length)){
+    std::cout<<" - focal length for the camera used in building the map: " << focal_length <<std::endl;
+  }
+  
+
 
   //Application integration P3
   // set up frontend -- use parameters as loaded in previous practical
-  arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2);
+  arp::Frontend frontend(640, 360, fu, fv, cu, cv, k1, k2, p1, p2, focal_length);
   
   // load map
   std::string path = ros::package::getPath("ardrone_practicals");
@@ -142,6 +147,13 @@ int main(int argc, char **argv)
 
   if(!frontend.loadMap(mapPath))
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
+  
+  // Application P4
+  // load DBoW2 vocabulary
+  std::string vocPath = path + "/maps/small_voc.yml.gz";
+  if(!frontend.loadDBoW2Voc(vocPath))
+    ROS_FATAL_STREAM("could not load DBoW2 voc. from " << vocPath << " !");
+  frontend.buildDatabase();
 
   // state publisher -- provided for rviz visualisation of drone pose:
   arp::StatePublisher pubState(nh);

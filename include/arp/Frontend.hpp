@@ -44,10 +44,11 @@ class Frontend
   /// \parameter k2 2nd radial distortion parameter. 
   /// \parameter p1 1st tangential distortion parameter.
   /// \parameter p2 2nd tangential distortion parameter.
+  /// \parameter focalLength The focal length of the camera used in building the map.
   Frontend(int imageWidth, int imageHeight, double focalLengthU,
                            double focalLengthV, double imageCenterU,
                            double imageCenterV, double k1, double k2, double p1,
-                           double p2);
+                           double p2, double focalLength);
 
   /// \brief Load the map
   /// \parameter path The full path to the map file.
@@ -58,6 +59,10 @@ class Frontend
   /// \parameter path The full path to the vocabulary file.
   /// \return True on success.
   bool loadDBoW2Voc(std::string path);
+
+  /// \brief Build database
+  /// \return True on success.
+  bool buildDatabase();
 
   /// \brief Detect and match keypoints in image that can be fed to an estimator.
   /// \warning If not returning true, there may still be detections, but not verified
@@ -104,6 +109,7 @@ class Frontend
   typedef std::vector<Landmark, Eigen::aligned_allocator<Landmark>> LandmarkVec;
   std::map<uint64_t, LandmarkVec> landmarks_; ///< Landmarks grouped by pose ID.
   std::map<uint64_t, std::set<uint64_t>> covisibilities_; ///< Set of covisibilities by pose ID.
+  std::map<uint64_t, uint64_t> db2kf;  //Matching the database_ID and the keyframe_ID P4
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor
