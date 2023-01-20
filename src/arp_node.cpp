@@ -23,9 +23,10 @@
 #include "arp/cameras/PinholeCamera.hpp"
 #include "arp/cameras/RadialTangentialDistortion.hpp"
 
-#include<ros/package.h>
+#include <ros/package.h>
 #include "arp/VisualInertialTracker.hpp"
 #include "arp/StatePublisher.hpp"
+#include "arp/InteractiveMarkerServer.hpp"
 
 
 class Subscriber
@@ -189,6 +190,21 @@ int main(int argc, char **argv)
   ros::Subscriber subImu = nh.subscribe("ardrone/imu", 50,
                                         &Subscriber::imuCallback, &subscriber);
 
+  
+  // set up interactive marker P5
+  double x, y, z, yaw;
+  arp::InteractiveMarkerServer server(autopilot);
+  double euler_angle_max, control_vz_max, control_yaw;
+  if(!nh.getParam("/ardrone_driver/euler_angle_max", euler_angle_max))
+    ROS_FATAL("error loading PID limits parameter euler_angle_max");
+  if(!nh.getParam("/ardrone_driver/control_vz_max", control_vz_max))
+    ROS_FATAL("error loading PID limits parameter control_vz_max");
+  if(!nh.getParam("/ardrone_driver/control_yaw", control_yaw))
+    ROS_FATAL("error loading PID limits parameter control_yaw");
+
+  visualInertialTracker.setControllerCallback(std::bind(&arp::Autopilot::controllerCallback, &autopilot,
+                                                std::placeholders::_1, std::placeholders::_2));
+
 
   // enter main event loop
   std::cout << "===== Hello AR Drone ====" << std::endl;
@@ -200,6 +216,7 @@ int main(int argc, char **argv)
   arp::cameras::PinholeCamera<arp::cameras::RadialTangentialDistortion> pinholeCamera(imageWidth, imageHeight, fu, fv, cu, cv, distortion);
   pinholeCamera.initialiseUndistortMaps(imageWidth, imageHeight, fu,  fv, cu,  cv);
   bool undistort = false;
+  bool mode_switch = false;
 
   std::string s;
   while (ros::ok()) {
@@ -341,53 +358,73 @@ int main(int argc, char **argv)
         std::cout << " [FAIL]" << std::endl;
       }
     }
+    //switch between automatic mode and manual mode
+    if (state[SDL_SCANCODE_RCTRL]) {
+      std::cout << "Enabling automatic control..." << std::endl;
+      autopilot.setAutomatic();
+      mode_switch = true;
+    }
+    if (state[SDL_SCANCODE_SPACE]) {
+      std::cout << "Switching back to manual control..." << std::endl;
+      autopilot.setManual();
+    }
+  
+    if(!autopilot.isAutomatic()){
+      // TODO: process moving commands when in state 3,4, or 7
+      double forward=0;
+      double left=0;
+      double up=0;
+      double rotateLeft=0;
 
-    // TODO: process moving commands when in state 3,4, or 7
-    double forward=0;
-    double left=0;
-    double up=0;
-    double rotateLeft=0;
-
-    if (state[SDL_SCANCODE_UP]) {
-      std::cout << "Moving the drone forward...     status=" << droneStatus;
-      forward+=0.5;
+      if (state[SDL_SCANCODE_UP]) {
+        std::cout << "Moving the drone forward...     status=" << droneStatus;
+        forward+=0.5;
+      }
+      if (state[SDL_SCANCODE_DOWN]) {
+        std::cout << "Moving the drone backward...     status=" << droneStatus;
+        forward+=-0.5;
+      }
+      if (state[SDL_SCANCODE_LEFT]) {
+        std::cout << "Moving the drone left...     status=" << droneStatus;
+        left+=0.5;
+      }
+      if (state[SDL_SCANCODE_RIGHT]) {
+        std::cout << "Moving thr drone right...     status=" << droneStatus;
+        left+=-0.5;
+      }
+      
+      if (state[SDL_SCANCODE_W]) {
+        std::cout << "Moving the drone up...     status=" << droneStatus;
+        up+=0.5;
+      }
+      if (state[SDL_SCANCODE_S]) {
+        std::cout << "Moving the drone down...     status=" << droneStatus;
+        up+=-0.5;
+      }
+      if (state[SDL_SCANCODE_A]) {
+        std::cout << "Yawing the drone left...     status=" << droneStatus;
+        rotateLeft += 0.5;
+      }
+      if (state[SDL_SCANCODE_D]) {
+        std::cout << "Yawing the drone right...     status=" << droneStatus;
+        rotateLeft += -0.5;
+      }      
+      bool success = autopilot.manualMove(forward,left,up,rotateLeft);
+      if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && success) {
+        std::cout << " [ OK ] " << std::endl;
+      } 
+      if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && !success) {
+        std::cout << " [FAIL] " << std::endl;
+      }    
     }
-    if (state[SDL_SCANCODE_DOWN]) {
-      std::cout << "Moving the drone backward...     status=" << droneStatus;
-      forward+=-0.5;
+    else{
+      if (mode_switch)
+      {
+        autopilot.getPoseReference(x, y, z, yaw);
+        server.activate(x, y, z, yaw);
+        mode_switch = false;
+      }
     }
-    if (state[SDL_SCANCODE_LEFT]) {
-      std::cout << "Moving the drone left...     status=" << droneStatus;
-      left+=0.5;
-    }
-    if (state[SDL_SCANCODE_RIGHT]) {
-      std::cout << "Moving thr drone right...     status=" << droneStatus;
-      left+=-0.5;
-    }
-    
-    if (state[SDL_SCANCODE_W]) {
-      std::cout << "Moving the drone up...     status=" << droneStatus;
-      up+=0.5;
-    }
-    if (state[SDL_SCANCODE_S]) {
-      std::cout << "Moving the drone down...     status=" << droneStatus;
-      up+=-0.5;
-    }
-    if (state[SDL_SCANCODE_A]) {
-      std::cout << "Yawing the drone left...     status=" << droneStatus;
-      rotateLeft += 0.5;
-    }
-    if (state[SDL_SCANCODE_D]) {
-      std::cout << "Yawing the drone right...     status=" << droneStatus;
-      rotateLeft += -0.5;
-    }      
-    bool success = autopilot.manualMove(forward,left,up,rotateLeft);
-    if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && success) {
-      std::cout << " [ OK ] " << std::endl;
-    } 
-    if ((forward != 0 || left!=0 || up !=0 || rotateLeft != 0) && !success) {
-      std::cout << " [FAIL] " << std::endl;
-    }    
   }
 
   // make sure to land the drone...
