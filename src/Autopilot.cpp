@@ -204,7 +204,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
 
   double err_yaw = ref_yaw_ - yaw;
   if(abs(err_yaw) > M_PI){
-    err_yaw = -M_PI + fmod(fmod(err_yaw + M_PI, 2*M_PI), 2*M_PI);
+    err_yaw = -M_PI + fmod(2*M_PI + fmod(err_yaw + M_PI, 2*M_PI), 2*M_PI);
   }
 
   Eigen::Vector3d err_pos_dot = -R_SW * x.v_W;
@@ -214,6 +214,8 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   double euler_angle_max, control_vz_max, control_yaw;
   if(!nh_->getParam("/ardrone_driver/euler_angle_max", euler_angle_max) || !nh_->getParam("/ardrone_driver/control_vz_max", control_vz_max) || !nh_->getParam("/ardrone_driver/control_yaw", control_yaw))
     ROS_FATAL("error loading PID limits parameters"); 
+
+  control_vz_max *= pow(10, -3);
 
   // TODO: compute control output
   pid_x.setOutputLimits(-euler_angle_max, euler_angle_max);
