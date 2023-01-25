@@ -110,6 +110,7 @@ class Frontend
   std::map<uint64_t, LandmarkVec> landmarks_; ///< Landmarks grouped by pose ID.
   std::map<uint64_t, std::set<uint64_t>> covisibilities_; ///< Set of covisibilities by pose ID.
   std::map<uint64_t, uint64_t> db2kf;  //Matching the database_ID and the keyframe_ID P4
+  uint64_t active_fm_id; //the id of the active frame
 
   std::shared_ptr<cv::FeatureDetector> detector_;  ///< the BRISK detector
   std::shared_ptr<cv::DescriptorExtractor> extractor_;  ///< the BRISK extractor

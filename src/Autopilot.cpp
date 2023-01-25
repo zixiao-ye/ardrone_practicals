@@ -33,17 +33,20 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
       nh_->resolveName("ardrone/flattrim"), 1);
   
   PidController::Parameters p;
-  p.k_p = 0.05;
-  p.k_i = 0;
-  p.k_d = 0.05;
+  p.k_p = 1;
+  p.k_i = 0.1;
+  p.k_d = 0.15;
   pid_x.setParameters(p);
   pid_y.setParameters(p);
 
   p.k_p = 1.0;
+  p.k_i = 0;
   p.k_d = 0;
   pid_z.setParameters(p);
 
   p.k_p = 1.5;
+  p.k_i = 0;
+  p.k_d = 0;
   pid_yaw.setParameters(p);
 }
 

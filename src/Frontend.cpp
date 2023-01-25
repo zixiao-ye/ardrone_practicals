@@ -304,71 +304,90 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     features.push_back(copy);
   }
 
-  int num_ret = 3;
-  std::vector<uint64_t> query_frames_;
-  dBowDatabase_.query(features, ret, num_ret);
 
-  for (size_t i = 0; i < num_ret; i++)
-  {
-    query_frames_.push_back(db2kf[ret[i].Id]);
-  }
-  //std::cout << "Searching for Keyframe:: "<< ret<<std::endl;
+  if (needsReInitialisation){
+    int num_ret = 3; // Number of top query results
+    std::vector<uint64_t> query_frames_;
+    dBowDatabase_.query(features, ret, num_ret);
 
-  std::vector<cv::Point3d> worldPoints;
-  std::vector<cv::Point2d> imagePoints;
-  DetectionVec detections_copy;
-
-  int max_distance = 20;
-  int max_covisible = 4;
-
-  for(const auto& fm_id : query_frames_) { // go through active keyframes
-    std::set<uint64_t> covisibles /* = covisibilities_[fm_id] */;
-    covisibles.insert(fm_id);
-    for(auto itr:covisibilities_[fm_id]){
-      int dist = (fm_id > itr) ? fm_id - itr :  itr - fm_id;
-      if (dist < max_distance && covisibles.size() < max_covisible)
-      {
-        covisibles.insert(itr);  
-        //std::cout<<"insert covisible frame: "<<itr<<std::endl;
-      }
-      if (covisibles.size() >= max_covisible){
-        break;
-      }
+    for (size_t i = 0; i < num_ret; i++){
+      query_frames_.push_back(db2kf[ret[i].Id]);
     }
+    //std::cout << "Searching for Keyframe:: "<< ret<<std::endl;
 
-    for(const auto& likely_frame_id : covisibles){ // go through active keyframes + covisibles
-      for(const auto lm : landmarks_[likely_frame_id]) { // go through all landmarks seen from this pose
+    int max_matches = 0;
+    for(const auto& kf_id : query_frames_){ // go through query frames
+      int num_matches = 0;
+      for(const auto lm : landmarks_[kf_id]) { // go through all landmarks seen from this pose
         for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
           uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
           const float dist = brisk::Hamming::PopcntofXORed(
                 keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
           // TODO check if a match and process accordingly
           if (dist < 60)
+            num_matches++;
+        }
+      }
+      if (num_matches > max_matches){
+        max_matches = num_matches;
+        active_fm_id = kf_id;
+      }
+    } 
+  }
+  
+  std::vector<cv::Point3d> worldPoints;
+  std::vector<cv::Point2d> imagePoints;
+  DetectionVec detections_copy;
+
+  int max_distance = 20; // Frame id gap, we choose the nearest frames
+  int max_covisible = 4; // Number of covisibles frames
+  
+  std::set<uint64_t> covisibles;
+  covisibles.insert(active_fm_id);
+  for(auto itr:covisibilities_[active_fm_id]){
+    int dist = (active_fm_id > itr) ? active_fm_id - itr :  itr - active_fm_id;
+    if (dist < max_distance && covisibles.size() < max_covisible){
+      covisibles.insert(itr);  
+    }
+    if (covisibles.size() >= max_covisible){
+      break;
+    }
+  }
+
+  int max_matches = 0;
+  for(const auto& likely_frame_id : covisibles){ // go through active keyframes + covisibles
+    int num_matches = 0;      
+    for(const auto lm : landmarks_[likely_frame_id]) { // go through all landmarks seen from this pose
+      for(size_t k = 0; k < keypoints.size(); ++k) { // go through all keypoints in the frame
+        uchar* keypointDescriptor = descriptors.data + k*48; // descriptors are 48 bytes long
+        const float dist = brisk::Hamming::PopcntofXORed(
+              keypointDescriptor, lm.descriptor.data, 3); // compute desc. distance: 3 for 3x128bit (=48 bytes)
+        // TODO check if a match and process accordingly
+        if (dist < 60){
+          num_matches++;
+          cv::KeyPoint& ckp = keypoints[k];
+          Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
+          cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
+          cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);            
+          if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
           {
-            cv::KeyPoint& ckp = keypoints[k];
-            Eigen::Vector2d kp(ckp.pt.x, ckp.pt.y);
-            cv::Point2d imagePoint(ckp.pt.x, ckp.pt.y);
-            cv::Point3d worldPoint(lm.point[0], lm.point[1], lm.point[2]);
-            if (std::find(imagePoints.begin(), imagePoints.end(), imagePoint) == imagePoints.end())
-            {
-              Detection detection;
-              detection.keypoint = kp;
-              detection.landmark = lm.point;
-              detection.landmarkId = lm.landmarkId;
-              imagePoints.push_back(imagePoint);
-              worldPoints.push_back(worldPoint);
-              detections_copy.push_back(detection);
-            }
+            Detection detection;
+            detection.keypoint = kp;
+            detection.landmark = lm.point;
+            detection.landmarkId = lm.landmarkId;
+            imagePoints.push_back(imagePoint);
+            worldPoints.push_back(worldPoint);
+            detections_copy.push_back(detection);
           }
-          
         }
       }
     }
-    /* checkedPoses++;
-    if(checkedPoses>=numPosesToMatch) {
-      break;
-    } */
+    if (num_matches > max_matches){
+      max_matches = num_matches;
+      active_fm_id = likely_frame_id;
+    }
   }
+  
 
   // TODO run RANSAC (to remove outliers and get pose T_CW estimate)
 
@@ -398,12 +417,9 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
     }    
   }
   
-  if (needsReInitialisation)
-  {
-    return true;
-  }
   
-  return ransacSuccess; // TODO return true if successful...
+  
+  return ransacSuccess || needsReInitialisation; // TODO return true if successful...
 }
 
 }  // namespace arp
