@@ -23,14 +23,14 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
 {
   // TODO: implement...
   
-  uint64_t deltaT = timestampMicroseconds * pow(10,-6) - lastTimestampMicroseconds_ * pow(10,-6); 
+  double deltaT = timestampMicroseconds * pow(10,-6) - lastTimestampMicroseconds_ * pow(10,-6); 
 
   if(deltaT > 0.1){
     deltaT = 0.1;
   }
 
   // do some smoothing (numeric derivatives are noisy):
-  integratedError_ = 0.8 * integratedError_ + 0.2 * e_dot;
+  integratedError_ = e_dot;
   // compute output:
   double output = parameters_.k_p * e + parameters_.k_i * integratedError_ + parameters_.k_d * e_dot;
   
