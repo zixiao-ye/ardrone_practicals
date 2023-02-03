@@ -73,6 +73,11 @@
         "__debug": "cpp",
         "__tuple": "cpp",
         "__verbose_abort": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "__split_buffer": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp"
     }
 }

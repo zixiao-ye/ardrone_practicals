@@ -28,6 +28,11 @@
 #include "arp/StatePublisher.hpp"
 #include "arp/InteractiveMarkerServer.hpp"
 
+#include "arp/Planner.hpp"
+
+
+
+
 
 class Subscriber
 {
@@ -148,6 +153,40 @@ int main(int argc, char **argv)
 
   if(!frontend.loadMap(mapPath))
     ROS_FATAL_STREAM("could not load map from " << mapPath << " !");
+
+
+  //load the occupancy map P6
+  if(!nh.getParam("arp_node/occupancymap", mapFile))
+    ROS_FATAL("error loading parameter");
+  std::string filename = path+"/maps/"+mapFile;
+  std::ifstream mapFileI(filename, std::ios::in | std::ios::binary);
+  if(!mapFileI.is_open()) {
+    ROS_FATAL_STREAM("could not open map file " << filename);
+  }
+  // first read the map size along all the dimensions:
+  int sizes[3];
+  if(!mapFileI.read((char*)sizes, 3*sizeof(int))) {
+    ROS_FATAL_STREAM("could not read map file " << filename);
+  }
+  // now read the map data: don’t forget to delete[] in the end!
+
+  char* mapData = new char[sizes[0]*sizes[1]*sizes[2]];
+  if(!mapFileI.read((char*)mapData, sizes[0]*sizes[1]*sizes[2])) {
+    ROS_FATAL_STREAM("could not read map file " << filename);
+  }
+
+  mapFileI.close();
+
+  // now wrap it with a cv::Mat for easier access:
+  cv::Mat wrappedMapData(3, sizes, CV_8SC1, mapData);
+
+
+  Eigen::Vector3d start,dest;
+  std::vector<double> dest_array;
+  if(!nh.getParam("arp_node/pointB", dest_array))
+    ROS_FATAL("error loading destination parameter");
+  start << 0, 0, 0;
+  dest << dest_array[0], dest_array[1], dest_array[2]; 
   
   // Application P4
   // load DBoW2 vocabulary
@@ -204,6 +243,8 @@ int main(int argc, char **argv)
 
   visualInertialTracker.setControllerCallback(std::bind(&arp::Autopilot::controllerCallback, &autopilot,
                                                 std::placeholders::_1, std::placeholders::_2));
+  
+  
 
 
   // enter main event loop
@@ -367,6 +408,14 @@ int main(int argc, char **argv)
     if (state[SDL_SCANCODE_SPACE]) {
       std::cout << "Switching back to manual control..." << std::endl;
       autopilot.setManual();
+    }
+    if (state[SDL_SCANCODE_P]) {
+      std::cout << "Switching into the Challenge Mode..." << std::endl;
+      //initialize the planner
+      arp::Planner planner(wrappedMapData, start[0], start[1], start[2], dest[0], dest[1], dest[2], sizes);
+      // autopilot.activatePlanner(planner);
+      planner.astar();
+      autopilot.flyPath(planner.getWaypoints());
     }
   
     if(!autopilot.isAutomatic()){

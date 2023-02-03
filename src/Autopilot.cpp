@@ -10,6 +10,7 @@
 
 #include "arp/kinematics/Transformation.hpp"
 
+
 namespace arp {
 
 Autopilot::Autopilot(ros::NodeHandle& nh)
@@ -179,6 +180,10 @@ bool Autopilot::getPoseReference(double& x, double& y, double& z, double& yaw) {
   yaw = ref_yaw_;
   return true;
 }
+
+/* void Autopilot::activatePlanner(arp::Planner planner){
+  //planner.astar();
+} */
 
 /// The callback from the estimator that sends control outputs to the drone
 void Autopilot::controllerCallback(uint64_t timeMicroseconds,
