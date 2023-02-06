@@ -269,7 +269,7 @@ bool Frontend::ransac(const std::vector<cv::Point3d>& worldPoints,
   }
   T_CW = kinematics::Transformation(T_CW_mat);
 
-  return ransacSuccess && (double(inliers.size())/double(imagePoints.size()) > 0.6);
+  return ransacSuccess && (double(inliers.size())/double(imagePoints.size()) > 0.7);
 }
 
 bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extractionDirection, 
@@ -339,8 +339,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   std::vector<cv::Point2d> imagePoints;
   DetectionVec detections_copy;
 
-  int max_distance = 20; // Frame id gap, we choose the nearest frames
-  int max_covisible = 4; // Number of covisibles frames
+  int max_distance = 100; // Frame id gap, we choose the nearest frames
+  int max_covisible = 20; // Number of covisibles frames
   
   std::set<uint64_t> covisibles;
   covisibles.insert(active_fm_id);

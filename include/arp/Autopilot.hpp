@@ -131,6 +131,7 @@ class Autopilot {
   void flyPath(const std::deque<Waypoint>& waypoints) {
     std::lock_guard<std::mutex> l(waypointMutex_);
     waypoints_ = waypoints;
+    //waypoints_size_ = waypoints_.size();
   }
 
   /// \brief How many waypoints still have to be flown to?
@@ -138,6 +139,19 @@ class Autopilot {
   int waypointsLeft() {
     std::lock_guard<std::mutex> l(waypointMutex_);
     return waypoints_.size();
+  }
+
+  int waypoints_rhLeft() {
+    std::lock_guard<std::mutex> l(waypointMutex_);
+    return waypoints_rh.size();
+  }
+
+  Eigen::Vector3d getpointA(){
+    return pointA;
+  }
+
+  bool haspointA(){
+    return pointA_flag;
   }
 
   float getbatteryPercent(){return lastNavdata_.batteryPercent;}
@@ -178,6 +192,11 @@ class Autopilot {
   std::atomic<bool> isAutomatic_; ///< True, if in automatic control mode.
 
   std::deque<Waypoint> waypoints_;  ///< A list of waypoints that will be approached, if not empty.
+  std::deque<Waypoint> waypoints_rh; 
+  //size_t waypoints_size_;
+  bool arrive_ = false;
+  bool pointA_flag = false;
+  Eigen::Vector3d pointA;
   std::mutex waypointMutex_;  ///< We need to lock the waypoint access due to asynchronous arrival.
 
   //PID Controllers

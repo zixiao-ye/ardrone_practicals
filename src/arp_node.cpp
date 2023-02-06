@@ -232,7 +232,7 @@ int main(int argc, char **argv)
   
   // set up interactive marker P5
   double x, y, z, yaw;
-  arp::InteractiveMarkerServer server(autopilot);
+  //arp::InteractiveMarkerServer server(autopilot);
   double euler_angle_max, control_vz_max, control_yaw;
   if(!nh.getParam("/ardrone_driver/euler_angle_max", euler_angle_max))
     ROS_FATAL("error loading PID limits parameter euler_angle_max");
@@ -258,6 +258,7 @@ int main(int argc, char **argv)
   pinholeCamera.initialiseUndistortMaps(imageWidth, imageHeight, fu,  fv, cu,  cv);
   bool undistort = false;
   bool mode_switch = false;
+  bool flyChallenge = false;
 
   std::string s;
   while (ros::ok()) {
@@ -407,15 +408,21 @@ int main(int argc, char **argv)
     }
     if (state[SDL_SCANCODE_SPACE]) {
       std::cout << "Switching back to manual control..." << std::endl;
+      flyChallenge = false;
       autopilot.setManual();
     }
     if (state[SDL_SCANCODE_P]) {
+      flyChallenge = true;
+      autopilot.setAutomatic();
       std::cout << "Switching into the Challenge Mode..." << std::endl;
-      //initialize the planner
-      arp::Planner planner(wrappedMapData, start[0], start[1], start[2], dest[0], dest[1], dest[2], sizes);
-      // autopilot.activatePlanner(planner);
-      planner.astar();
-      autopilot.flyPath(planner.getWaypoints());
+      if(autopilot.haspointA() && autopilot.waypointsLeft() == 0&& autopilot.waypoints_rhLeft() == 0){
+        start = autopilot.getpointA();
+        //initialize the planner
+        arp::Planner planner(wrappedMapData, start[0], start[1], start[2], dest[0], dest[1], dest[2], sizes);
+        // autopilot.activatePlanner(planner);
+        planner.astar();
+        autopilot.flyPath(planner.getWaypoints());
+      }
     }
   
     if(!autopilot.isAutomatic()){
@@ -470,9 +477,36 @@ int main(int argc, char **argv)
       if (mode_switch)
       {
         autopilot.getPoseReference(x, y, z, yaw);
-        server.activate(x, y, z, yaw);
+        //server.activate(x, y, z, yaw);
         mode_switch = false;
       }
+      if (flyChallenge)
+      {
+        /* if (droneStatus == arp::Autopilot::Landed)
+        {
+          std::cout << "Taking off...                          status=" << droneStatus;
+          bool success = autopilot.takeoff();
+          if (success) {
+            std::cout << " [ OK ]" << std::endl;
+          } else {
+            std::cout << " [FAIL]" << std::endl;
+          }
+        }  */
+
+        /* if (droneStatus == arp::Autopilot::Flying || droneStatus == arp::Autopilot::Flying2 || droneStatus == arp::Autopilot::Hovering )
+        {
+          std::cout << "Going to land...                       status=" << droneStatus;
+          bool success = autopilot.land();
+          if (success) {
+            std::cout << " [ OK ]" << std::endl;
+          } else {
+            std::cout << " [FAIL]" << std::endl;
+          }
+        }  */
+      
+        
+      }
+      
     }
   }
 

@@ -63,6 +63,11 @@ namespace arp{
 
     //astar algorithm
     void Planner::astar(){
+        if (isOccupied(dest[0], dest[1], dest[2]))
+        {
+            std::cout<<"dest is occupied!"<<std::endl;
+            return;
+        }
         
         int num_vertices = mapSizes[0] * mapSizes[1] * mapSizes[2];
 
@@ -93,7 +98,7 @@ namespace arp{
 
 
 
-            //std::cout<<u[0]<<"  "<<u[1]<<"  "<<u[2]<<std::endl;
+            //std::cout<<"U: "<<u[0]<<"  "<<u[1]<<"  "<<u[2]<<" totDistEst: "<<MinVal<<std::endl;
             //std::cout<<"Before erase openSet: "<<openSet.size()<<std::endl;
             openSet.erase(remove(openSet.begin(), openSet.end(), u), openSet.end());
             //std::cout<<openSet.size()<<std::endl;
@@ -143,6 +148,7 @@ namespace arp{
                         if(u.isApprox(v, 1e-5f))
                             continue;
 
+                        // check is not occupied
                         if(isOccupied(v[0], v[1], v[2]))
                             continue;
                         
@@ -205,8 +211,8 @@ namespace arp{
                 idx2pos(mapSizes[0], u[0]),
                 idx2pos(mapSizes[1], u[1]),
                 idx2pos(mapSizes[2], u[2]),
-                0,
-                10,
+                0.1,
+                0.1,
             };
             waypoints.push_front(waypoint);
             

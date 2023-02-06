@@ -10,6 +10,9 @@
 
 #include "arp/kinematics/Transformation.hpp"
 
+#include <chrono>
+#include <thread>
+
 
 namespace arp {
 
@@ -35,14 +38,14 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   
   PidController::Parameters p;
   p.k_p = 1;
-  p.k_i = 0.1;
-  p.k_d = 0.15;
+  p.k_i = 0.08;
+  p.k_d = 0.1;
   pid_x.setParameters(p);
   pid_y.setParameters(p);
 
   p.k_p = 1.0;
-  p.k_i = 0;
-  p.k_d = 0;
+  p.k_i = 0.05;
+  p.k_d = 0.05;
   pid_z.setParameters(p);
 
   p.k_p = 1.5;
@@ -197,11 +200,65 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
     setPoseReference(x.t_WS[0], x.t_WS[1], x.t_WS[2], yaw);
     return;
   }
-  //std::cout<<"test"<<std::endl;
+  
   // TODO: only enable when in flight
   DroneStatus dronestatus = droneStatus();
-  if (dronestatus != Flying && dronestatus != Flying2 && dronestatus != Hovering)
+  
+  if (dronestatus == Landing || dronestatus == TakingOff)
     return;
+  
+  if(!pointA_flag){
+    pointA[0] = x.t_WS[0];
+    pointA[1] = x.t_WS[1];
+    pointA[2] = x.t_WS[2];
+    std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAA"<<pointA<<std::endl;
+    pointA_flag = true;
+  }
+
+  //std::cout<<"test"<<std::endl;
+  if(!waypoints_.empty()){
+    // TODO: setPoseReference() from current waypoint
+    setPoseReference(waypoints_[0].x, waypoints_[0].y, waypoints_[0].z, waypoints_[0].yaw);
+    //posErr = sqrt(pow(u[0] - v[0], 2) + pow(u[1] - v[1], 2) + pow(u[2] - v[2], 2)); 
+  }else if(!waypoints_rh.empty()){
+    setPoseReference(waypoints_rh[0].x, waypoints_rh[0].y, waypoints_rh[0].z, waypoints_rh[0].yaw);
+  }else if(dronestatus == Flying || dronestatus == Flying2 || dronestatus == Hovering){  // Landing at waypoint A
+    std::cout << "Going to land...Landing at waypoint A                       status=";
+    bool success = land();
+    if (success) {
+      std::cout << " [ OK ]" << std::endl;
+    } else {
+      std::cout << " [FAIL]" << std::endl;
+    }
+    return;
+  }
+  std::cout<<waypoints_.size()<<" "<<waypoints_rh.size()<<" "<<dronestatus<<std::endl;
+  if(waypoints_.empty() && !waypoints_rh.empty() && dronestatus == Landed)
+  {
+      std::cout << "Taking off...                          status=";
+      bool success = takeoff();
+      if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+      return;
+  }
+  if(waypoints_.empty() && (dronestatus == Flying || dronestatus == Flying2 || dronestatus == Hovering) &&  arrive_)  // Landing at waypoint B
+  {
+      std::cout << "Going to land...Landing at waypoint B                       status=";
+      bool success = land();
+      if (success) {
+        std::cout << " [ OK ]" << std::endl;
+      } else {
+        std::cout << " [FAIL]" << std::endl;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+      arrive_ = false;
+      return;
+  }
+  
   
   kinematics::Transformation T_WS(x.t_WS, x.q_WS);
   Eigen::Matrix3d R_SW = T_WS.R().transpose();
@@ -209,6 +266,24 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   Eigen::Vector3d ref_pos; 
   ref_pos<< ref_x_, ref_y_, ref_z_;
   Eigen::Vector3d err_pos = R_SW * (ref_pos - x.t_WS);
+
+  std::lock_guard<std::mutex> l(refMutex_);
+  if(!waypoints_.empty()){
+    if(err_pos.squaredNorm() < waypoints_[0].posTolerance){
+      waypoints_rh.push_front(waypoints_[0]);
+      waypoints_.pop_front();
+      if (waypoints_.empty())
+        arrive_ = true;
+    }
+  }else if (!waypoints_rh.empty())
+  {
+    if(err_pos.squaredNorm() < waypoints_rh[0].posTolerance){
+      waypoints_rh.pop_front();
+    }
+  }
+  
+
+  std::cout<<"Ref pos: "<<ref_pos<<" Drone pos: "<<x.t_WS<<std::endl;
 
   double err_yaw = ref_yaw_ - yaw;
   if(abs(err_yaw) > M_PI){
