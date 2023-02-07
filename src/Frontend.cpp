@@ -339,8 +339,8 @@ bool Frontend::detectAndMatch(const cv::Mat& image, const Eigen::Vector3d & extr
   std::vector<cv::Point2d> imagePoints;
   DetectionVec detections_copy;
 
-  int max_distance = 200; // Frame id gap, we choose the nearest frames
-  int max_covisible = 60; // Number of covisibles frames
+  int max_distance = 60; // Frame id gap, we choose the nearest frames
+  int max_covisible = 10; // Number of covisibles frames
   
   std::set<uint64_t> covisibles;
   covisibles.insert(active_fm_id);

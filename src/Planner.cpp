@@ -248,7 +248,7 @@ namespace arp{
         std::deque<Autopilot::Waypoint> waypoints;
         int i, j, k;
         double height;
-        double threshold = 2;
+        double threshold = 1;
         
         /* Autopilot::Waypoint waypoint1 = {
                 idx2pos(mapSizes[0], u[0]),
