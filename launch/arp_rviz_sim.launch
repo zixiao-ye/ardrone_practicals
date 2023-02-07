@@ -46,7 +46,7 @@
     <param name="occupancymap" value="occupancy-map_skokloster.dat" />
     <!--param name="occupancymap" value="occupancy-map_garching.dat" /-->
     <!-- point B position -->
-    <rosparam param="pointB">[2.0, 1.0, 1.0]</rosparam>
+    <rosparam param="pointB">[0.7, 10.0, 1.0]</rosparam>
   </node>
 
 </launch>

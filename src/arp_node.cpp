@@ -46,6 +46,7 @@ class Subscriber
     // -- for later use
     std::lock_guard<std::mutex> l(imageMutex_);
     lastImage_ = cv_bridge::toCvShare(msg, "bgr8")->image;
+    //std::cout << "Image shape " << lastImage_.size() << std::endl;
 
     visualInertialTracker->addImage(timeMicroseconds, lastImage_);
   }
@@ -179,7 +180,18 @@ int main(int argc, char **argv)
 
   // now wrap it with a cv::Mat for easier access:
   cv::Mat wrappedMapData(3, sizes, CV_8SC1, mapData);
-
+  /* for (int i = 0; i < sizes[0]; i++)
+  {
+      for (int j = 0; j < sizes[1]; j++)
+      {
+          for (int k = 0; k < sizes[2]; k++)
+          {   
+            std::cout<<i<<"  "<<j<<"  "<<k<<" = "<<int(wrappedMapData.at<char>(k,j,i))<<std::endl;     
+          }
+      
+      }
+      
+  }  */
 
   Eigen::Vector3d start,dest;
   std::vector<double> dest_array;
@@ -232,7 +244,7 @@ int main(int argc, char **argv)
   
   // set up interactive marker P5
   double x, y, z, yaw;
-  //arp::InteractiveMarkerServer server(autopilot);
+  arp::InteractiveMarkerServer server(autopilot);
   double euler_angle_max, control_vz_max, control_yaw;
   if(!nh.getParam("/ardrone_driver/euler_angle_max", euler_angle_max))
     ROS_FATAL("error loading PID limits parameter euler_angle_max");
@@ -418,10 +430,17 @@ int main(int argc, char **argv)
       if(autopilot.haspointA() && autopilot.waypointsLeft() == 0&& autopilot.waypoints_rhLeft() == 0){
         start = autopilot.getpointA();
         //initialize the planner
-        arp::Planner planner(wrappedMapData, start[0], start[1], start[2], dest[0], dest[1], dest[2], sizes);
+        arp::Planner planner(&wrappedMapData, start[0], start[1], start[2], dest[0], dest[1], dest[2], sizes);
         // autopilot.activatePlanner(planner);
         planner.astar();
         autopilot.flyPath(planner.getWaypoints());
+        std::cout << "Taking off...                          status=" << droneStatus;
+        bool success = autopilot.takeoff();
+        if (success) {
+          std::cout << " [ OK ]" << std::endl;
+        } else {
+          std::cout << " [FAIL]" << std::endl;
+        }
       }
     }
   

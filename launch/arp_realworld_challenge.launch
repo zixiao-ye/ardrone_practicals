@@ -37,6 +37,7 @@
   <node name="arp_node" pkg="ardrone_practicals" type="arp_node"
       output="screen">
 		<!-- remap from="/cmd_vel" to="/cmd_vel_test"/>-->
+    <remap from="/ardrone/front/image_raw" to="/ardrone/image_raw"/>
 
     <!-- Map camera parameters-->
     <param name="focal_length" value="390" />
@@ -55,7 +56,7 @@
     <rosparam param="T_SC">[-0.00195087, -0.03257782,  0.99946730, 0.17409445, -0.99962338, -0.02729525, -0.00284087, 0.02255834, 0.02737326, -0.99909642, -0.03251230, 0.00174723, 0.00000000,  0.00000000,  0.00000000, 1.00000000]</rosparam>
     <!-- Make sure to load the right map! -->
     <param name="map" value="okvis2-slam-final_map_dronelab1.csv" />
-    <param name="occupancymap" value="occupancy-map_skokloster.dat" />
+    <param name="occupancymap" value="supereight2-densemap_dronelab1.dat" />
     <!--param name="occupancymap" value="occupancy-map_garching.dat" /-->
     <!-- point B position -->
     <rosparam param="pointB">[2.0, 1.0, 1.0]</rosparam>

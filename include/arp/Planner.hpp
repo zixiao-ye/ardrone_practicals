@@ -11,7 +11,7 @@ namespace arp{
 class Planner{
 public:
     // Constructor
-    Planner(cv::Mat& map, double start_x, double start_y, double start_z, double dest_x, double dest_y, double dest_z, int sizes[3]);
+    Planner(cv::Mat* map, double start_x, double start_y, double start_z, double dest_x, double dest_y, double dest_z, int sizes[3]);
 
     //check whether a point is occupied
     bool isOccupied(int i, int j, int k);

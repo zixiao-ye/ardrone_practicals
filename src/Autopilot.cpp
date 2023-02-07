@@ -242,7 +242,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
       } else {
         std::cout << " [FAIL]" << std::endl;
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(4000));
       return;
   }
   if(waypoints_.empty() && (dronestatus == Flying || dronestatus == Flying2 || dronestatus == Hovering) &&  arrive_)  // Landing at waypoint B
@@ -283,7 +283,7 @@ void Autopilot::controllerCallback(uint64_t timeMicroseconds,
   }
   
 
-  std::cout<<"Ref pos: "<<ref_pos<<" Drone pos: "<<x.t_WS<<std::endl;
+  //std::cout<<"Ref pos: "<<ref_pos<<" Drone pos: "<<x.t_WS<<std::endl;
 
   double err_yaw = ref_yaw_ - yaw;
   if(abs(err_yaw) > M_PI){

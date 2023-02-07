@@ -17,8 +17,8 @@ namespace arp{
     }
 
     // Constructor
-    Planner::Planner(cv::Mat& map, double start_x, double start_y, double start_z, double dest_x, double dest_y, double dest_z, int *sizes) 
-    : wrappedMapData_{&map}, mapSizes{sizes}{
+    Planner::Planner(cv::Mat* map, double start_x, double start_y, double start_z, double dest_x, double dest_y, double dest_z, int *sizes) 
+    : mapSizes{sizes}{
         int start_i = pos2idx(start_x, sizes[0]);
         int start_j = pos2idx(start_y, sizes[1]);
         int start_k = pos2idx(start_z, sizes[2]);
@@ -31,6 +31,8 @@ namespace arp{
         
         start << start_i, start_j, start_k;
         dest << dest_i, dest_j, dest_k; 
+
+        wrappedMapData_ = map;
    
 /*         start << 0, 0, 0;
         dest << 2, 0, 0; 
@@ -40,7 +42,7 @@ namespace arp{
 
     //check whether a point is occupied
     bool Planner::isOccupied(int i, int j, int k){
-        return int(wrappedMapData_->at<char>(i,j,k)) > 0;
+        return (int(wrappedMapData_->at<char>(i,j,k)) > 0);
     }
 
     // A Utility Function to check whether destination cell has
@@ -53,7 +55,17 @@ namespace arp{
     // A Utility Function to calculate the 'h' heuristics.
     double Planner::h(Eigen::Vector3i current)
     {
-        return euclideanDist(current, dest);
+        double weight{10};
+        /* for (size_t i = 73; i < current[2]; i++)
+        {
+            if (isOccupied(current[0], current[1], i)){
+                std::cout<<i<<"  below occupied!  "<<current<<std::endl;
+                return 1e+29f;
+                weight = 100;
+            }
+        }  */
+        
+        return weight * euclideanDist(current, dest);
         //return (current-dest).norm();
     }
 
@@ -63,6 +75,25 @@ namespace arp{
 
     //astar algorithm
     void Planner::astar(){
+        std::cout<< mapSizes[0]<<"  "<<mapSizes[1]<< "  "<<mapSizes[2]<<std::endl;
+
+        int ii = 207;
+        int kk = 89;
+        std::cout<<int(wrappedMapData_->at<char>(kk,ii,ii))<<std::endl;
+
+        /* for (int i = 0; i < mapSizes[0]; i++)
+        {
+            for (int j = 0; j < mapSizes[1]; j++)
+            {
+                for (int k = 0; k < mapSizes[2]; k++)
+                {   
+                    //if (i == 207 && j == 207 && k == 89)
+                        std::cout<<i<<"  "<<j<<"  "<<k<<" = "<<int(wrappedMapData_->at<char>(k,j,i))<<std::endl;     
+                }
+            
+            }
+            
+        }  */
         if (isOccupied(dest[0], dest[1], dest[2]))
         {
             std::cout<<"dest is occupied!"<<std::endl;
@@ -119,15 +150,15 @@ namespace arp{
             double alt;
             //std::cout<<"go through neighbours"<<std::endl;
             //std::cout<<"Before openSet: "<<openSet.size()<<std::endl;
-            for (int k = -1; k < 2; k++){
+            for (int k = -2; k < 3; k++){
                 //std::cout<<"check"<<std::endl;
                 v[2] = u[2] + k;
 
                 //out of boundaries z axis
-                if(v[2] > mapSizes[2] || v[2] < 0)
+                if(v[2] > mapSizes[2] || v[2] < 70)
                     continue;
 
-                for (int j = -1; j < 2; j++){
+                for (int j = -2; j < 3; j++){
 
                     v[1] = u[1] + j;
 
@@ -136,7 +167,7 @@ namespace arp{
                         continue;
 
 
-                    for (int i = -1; i < 2; i++){
+                    for (int i = -2; i < 3; i++){
 
                         v[0] = u[0] + i;
 
@@ -145,12 +176,28 @@ namespace arp{
                             continue;
                             
                         // node himself    
-                        if(u.isApprox(v, 1e-5f))
+                        if(u.isApprox(v, 1e-9f))
                             continue;
 
                         // check is not occupied
                         if(isOccupied(v[0], v[1], v[2]))
                             continue;
+                        
+                        
+                        bool flag1 = false;
+                        for (int z = 82; z < v[2]; z++)
+                        {
+                            if (isOccupied(v[0], v[1], z)){
+                                std::cout<<z<<"  below occupied!  "<<v<<std::endl;
+                                flag1 = true;
+                                //continue;
+                            }
+                        }
+                        if (flag1)
+                        {
+                            continue;
+                        }
+                        
                         
                         // rule out the parent node    
                         if(std::find(closeSet.begin(),closeSet.end(),v) != closeSet.end())
@@ -200,18 +247,32 @@ namespace arp{
         Eigen::Vector3i u = {dest[0], dest[1], dest[2]};
         std::deque<Autopilot::Waypoint> waypoints;
         int i, j, k;
+        double height;
+        double threshold = 2;
         
-        //std::cout<<"Scalar: "<<prev.at<cv::Scalar>(u[0], u[1], u[2])<<std::endl;
-        //while(prev.at<cv::Scalar>(u[0], u[1], u[2]) != start){
+        /* Autopilot::Waypoint waypoint1 = {
+                idx2pos(mapSizes[0], u[0]),
+                idx2pos(mapSizes[1], u[1]),
+                idx2pos(mapSizes[1], u[2]),
+                0.0,
+                0.1,
+        };
+        waypoints.push_front(waypoint1);  */
         while(prev.at<cv::Scalar>(u[0], u[1], u[2])[0] > -1e+29f 
                 || prev.at<cv::Scalar>(u[0], u[1], u[2])[1] > -1e+29f
                 || prev.at<cv::Scalar>(u[0], u[1], u[2])[2] > -1e+29f){
             //std::cout<<"test"<<std::endl;
+            height = idx2pos(mapSizes[2], u[2]);
+            if (height < threshold)
+                height = threshold; 
+            if(waypoints.size()==0)
+                height = idx2pos(mapSizes[2], u[2]);;
+            
             Autopilot::Waypoint waypoint = {
                 idx2pos(mapSizes[0], u[0]),
                 idx2pos(mapSizes[1], u[1]),
-                idx2pos(mapSizes[2], u[2]),
-                0.1,
+                height,
+                0.0,
                 0.1,
             };
             waypoints.push_front(waypoint);
@@ -226,6 +287,14 @@ namespace arp{
                 break; */
             u << i, j, k;
         }
+        /* Autopilot::Waypoint waypoint1 = {
+                idx2pos(mapSizes[0], u[0]),
+                idx2pos(mapSizes[1], u[1]),
+                idx2pos(mapSizes[1], u[2]),
+                0.2,
+                0.1,
+        };
+        waypoints.push_front(waypoint1); */
 
         return waypoints;
     }
