@@ -44,7 +44,7 @@ Autopilot::Autopilot(ros::NodeHandle& nh)
   pid_y.setParameters(p);
 
   p.k_p = 1.0;
-  p.k_i = 0.05;
+  p.k_i = 0.0;
   p.k_d = 0.05;
   pid_z.setParameters(p);
 

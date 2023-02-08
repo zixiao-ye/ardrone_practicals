@@ -29,7 +29,7 @@ double PidController::control(uint64_t timestampMicroseconds, double e,
     deltaT = 0.1;
   }
 
-  integratedError_ = e_dot;
+  //integratedError_ = e_dot;
   // compute output:
   double output = parameters_.k_p * e + parameters_.k_i * integratedError_ + parameters_.k_d * e_dot;
   
